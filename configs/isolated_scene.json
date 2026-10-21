@@ -1,0 +1,6 @@
+{
+  "source_scene_sha256": "768545c221a1b9337ba1dbc5ed49dc5fa56dec15eed875c3d73812efbbf646cb",
+  "base_bounds_m": [[-12.5, -1.0, -0.01], [-11.1, 1.05, 1.5]],
+  "selection": "Current negative-X blue base, complete connected visual components only",
+  "placement": "Preserve original world positions; add floor and column footing to replace removed platform"
+}

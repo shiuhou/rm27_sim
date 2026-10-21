@@ -1,0 +1,16 @@
+{
+  "name": "micro120_provisional",
+  "outer_width_m": 0.12,
+  "mass_kg": 0.18,
+  "propeller_diameter_m": 0.0508,
+  "motor": "1103 9600KV",
+  "source": "user reported; approximate mass, provisional outer envelope",
+  "rotor_center_offset_m": 0.03,
+  "engineering_estimates": {
+    "motor_point_mass_kg": 0.008,
+    "thrust_to_weight": 2.5,
+    "motor_time_constant_s": 0.04,
+    "yaw_torque_per_thrust_m": 0.018
+  },
+  "limitations": "Not calibrated or flight-verified. Guard rails are geometric proxies, not a certified full enclosure. No battery or voltage selected."
+}

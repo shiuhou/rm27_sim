@@ -1,0 +1,22 @@
+# Simulation-only 180 g / 120 mm proxy. Append after frozen hover.parm.
+# Raw hover output .4 -> (.4-.15)/(.95-.15).
+MOT_THST_HOVER 0.3125
+# Simulation refinement: 3x the inertia-scaled initial roll/pitch rate gains.
+# Retain I/P and D/P ratios while reducing coarse PWM correction deadband.
+ATC_RAT_RLL_P 0.03972999
+ATC_RAT_RLL_I 0.03972999
+ATC_RAT_RLL_D 0.00105948
+ATC_RAT_PIT_P 0.04738059
+ATC_RAT_PIT_I 0.04738059
+ATC_RAT_PIT_D 0.00126348
+ATC_RAT_YAW_P 0.00641039
+ATC_RAT_YAW_I 0.00042736
+ATC_RAT_YAW_D 0
+# Slow final descent in LAND; local AP 4.8 uses m/s.
+LAND_SPD_MS 0.1
+LAND_SPD_HIGH_MS 0.2
+# Allow the normal arming/interlock/spool-up sequence before idle auto-disarm.
+DISARM_DELAY 10
+# Root truth-position loop commands velocity; AP retains velocity/attitude loops.
+# Bit 4 disables duplicate horizontal position stabilization in Guided velocity mode.
+GUID_OPTIONS 16

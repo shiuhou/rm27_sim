@@ -1,8 +1,72 @@
-# MuJoCo Quadrotor with Independent Pygame Controller
+# RM27 Sim — 獨立仿真工作區
+
+
+完整任務仿真在**本 repo** 開發與執行。`rm27_sim/` 提供場景組合、任務執行、
+SITL 橋接和回放；`packages/physics/` 提供共用 Physics；RL 訓練留在獨立 `rm27_RL`。
+以下既有 Pygame/M0–M3 baseline 仍保留，與新的任務 CLI 是不同入口。
+
+## 從這裡開始
+
+```bash
+cd /home/shiuhou/Projects/rm27_drones/components/rm_uav_mujoco
+/home/shiuhou/venvs/mujoco/bin/python -m rm27_sim --help
+```
+
+新機器請建立 Python 環境，安裝 `requirements-simulation.txt`。完整源碼 checkout
+可直接 `python -m rm27_sim`，不需安裝或載入父倉庫、RL、Gymnasium 或 Torch。
+若主機設了其他軟體的 `PYTHONHOME`／`PYTHONPATH`，先 unset 再執行。
+
+大型 CAD、場地、MJCF 和歷史錄製不複製入 Git。用本機實際資產目錄登記：
+
+```bash
+python -m rm27_sim configure-assets --field /path/to/rmuc2026_battlefield_mjcf --cad /path/to/cad_raw --mjcf /path/to/rm_mjcf --recordings /path/to/recordings --ardupilot /path/to/ardupilot
+```
+
+只需提供要用的資產；回放不需要 ArduPilot，建構場景也不需要 RL。資產設定保存於
+忽略的 `.local/assets.json`，可以用 `RM27_SIM_ASSET_CONFIG` 指定另一份設定。
+場地 commit 與 CAD SHA-256 的既有驗證仍會執行，不會換成另一個場地。
+本機已登記目前資產位置。分開 clone 時請登記新機器的路徑，程式不會搜尋父倉庫。
+
+```bash
+# 原場地與機庫，既有 180 g 歷史基線；新 Ver2 場景另選 --config configs/scene_v2.json
+python -m rm27_sim build-dock --output artifacts/my-scene
+python -m rm27_sim view artifacts/my-scene/scene.xml
+
+# 既有單機 SITL 起飛／懸停／返回機庫降落；--view 開啟觀察視窗
+python -m rm27_sim micro-flight artifacts/my-scene/scene.xml --output artifacts/my-flight --instance 68 --view
+
+# 原 Teacher 完整場地第一視角；INPUT 必須是既有錄製目錄
+python -m rm27_sim replay /path/to/recordings/teacher-return-01/balanced --camera fpv --speed 1 --loop
+MUJOCO_GL=egl python -m rm27_sim render-replay /path/to/recordings/teacher-return-01/balanced --output artifacts/my-fpv
+```
+
+`route-flight` 保留既有完整路線任務入口，需要匹配場景雜湊的走廊 audit 和 mission
+配置；詳細參數用 `python -m rm27_sim route-flight --help`。此次只遷移實作，沒有新增
+PX4/VIO 整合、改變路線控制或把動畫當成閉環驗證。現有 SITL 任務使用 ArduPilot。
+
+輸出目錄每次必須是新目錄。原錄製和二進位模型保留原位；MJB 回放需要相容的
+MuJoCo 版本。舊 `rm27` 命令只是相容轉接，今後仿真程式請改本 repo 的 `rm27_sim/`。
 
 這是一個最小、可驗證的 MuJoCo 四旋翼 baseline。MuJoCo 物理模擬與 Pygame 飛行控制器是兩個獨立 process、兩個獨立視窗，透過 localhost UDP 傳送高層飛行命令與遙測。
 
 Pygame 是唯一飛行輸入視窗。MuJoCo Viewer 只負責顯示模擬與相機操作，沒有註冊 WASD、Q/E、R/F、T、L 等飛行 callback。Pygame 不會修改 MuJoCo state，也不會發送四個馬達推力。
+
+## 共用 Physics 套件與工作位置
+
+`packages/physics/` 是獨立的 `rm27-contact-physics` Python 套件，接受呼叫者提供的
+配置，只依賴 MuJoCo、NumPy 和 SciPy，不需要 RL、Gymnasium 或 Torch。
+在 Python 3.12 的獨立環境中可安裝：
+
+```bash
+python -m pip install ./packages/physics
+```
+
+此套件從 RL repository 原樣移入，套件名稱、版本和算法保持不變。
+共用的 `rm27_contact_physics.plant.RM27Plant` 接受明確配置與資產路徑；
+RL adapter 只負責訓練配置解析，並保留既有 import 入口。
+RL 的訓練環境、獎勵和策略留在 `rm27_RL`；完整場地、任務串接、回放和
+SITL 整合由本 repo 的 `rm27_sim/` 負責。既有 M0–M3 執行入口保持原樣。
+這次拆分不是新建完整 PX4/VIO 任務閉環，也不取代歷史實驗的物理實現。
 
 ## 實驗室脈絡（RM UAV Lab）
 

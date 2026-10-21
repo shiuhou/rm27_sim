@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "status": "engineering_estimate",
+  "frame": "body axes; principal inertia; COM at model origin",
+  "evidence": [],
+  "values": {
+    "mass_kg": 0.18,
+    "inertia_kg_m2": [0.00004483333333333333, 0.00005346666666666667, 0.00008843333333333333],
+    "max_rotor_thrust_N": 1.103625,
+    "motor_time_constant_s": 0.04,
+    "yaw_torque_per_thrust_m": 0.018
+  },
+  "limitations": "Equivalent nominal engineering estimates; not identified from real flight. No voltage, aerodynamic, sensor or structural calibration. Principal axes and COM must be independently checked."
+}

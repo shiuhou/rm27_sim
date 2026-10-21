@@ -2,3 +2,13 @@
 __pycache__/
 .pytest_cache/
 MUJOCO_LOG.TXT
+
+*.egg-info/
+build/
+dist/
+artifacts/
+
+.local/
+
+.agents/*
+!.agents/docs/

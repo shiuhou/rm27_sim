@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "drone_config": "configs/drone_v2.json",
+  "field": {
+    "path": "rm27/simulation/field/rmuc2026_battlefield_mjcf/model.xml",
+    "commit": "67c13270e213cf3f69da2619e349eed273432330"
+  },
+  "dock": {
+    "source": "data/references/cad_raw/dock.STEP",
+    "source_sha256": "1df1750e198d7f7012ba3489cc094cba63bbb179142dca64d2f1968c354ea72f",
+    "platform_body": "center_hangar_red",
+    "support_geom": "field__collision__hangar_red_top_plate",
+    "yaw_degrees": 0,
+    "slot_order": [
+      "slot_1",
+      "slot_2",
+      "slot_3",
+      "slot_4"
+    ]
+  },
+  "mission": {
+    "development_priority": "single_vehicle_complete_mission_reliability",
+    "milestone_contract": "docs/MILESTONES.md",
+    "multi_vehicle_expansion": "deferred_until_S6_prerequisites_pass",
+    "maximum_airborne": 1,
+    "release_next_requires": [
+      "valid_armor_impact",
+      "post_impact_stabilized",
+      "return_to_assigned_slot",
+      "landed",
+      "disarmed"
+    ],
+    "contact_target": "blue_armor_below_green_marker",
+    "localization_marker": "520_nm_dart_guidance_lamp",
+    "impact_speed_requirement_m_s": null,
+    "impact_normal_speed_research_hypothesis_m_s": ">10",
+    "impact_speed_basis": "RMUC 2026 42 mm armor detection threshold uses the velocity component normal to the struck surface; applicability to RM2027 aerial-robot damage is unconfirmed",
+    "guidance_initial": "simulation_truth",
+    "status": "not_implemented"
+  },
+  "baseline": {
+    "path": "rm27/autopilot/baselines/mujoco_uav_ardupilot",
+    "commit": "2369d7d207818160e2d140b16118a53f99491b66",
+    "field_commit": "dcf1202f04e1ba31ab5dffac6b2c1c26f1129453"
+  },
+  "vehicle_evidence": "Ver2 150 g separate model; historical 180 g mission results do not transfer"
+}

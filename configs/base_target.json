@@ -1,0 +1,39 @@
+{
+  "field_path": "rm27/simulation/field/rmuc2026_battlefield_mjcf/model.xml",
+  "field_sha256": "b363ffd0c37dea3e6a78ee4881789d8a25896b67a301d5a8614d38a060b02811",
+  "friendly_team": "red",
+  "target_team": "blue",
+  "selection": "negative-X blue base, mirrored from the previously inspected positive-X red-base candidate",
+  "surface_evidence": "User confirmed the positive-X target was the friendly red base. The negative-X pose is its 180-degree field-symmetry counterpart about (-0.02,0.02); final official RM2027 geometry remains pending.",
+  "armor_surface_center_m": [
+    -11.468,
+    0.02,
+    1.0758
+  ],
+  "armor_normal": [
+    0.4617,
+    0,
+    0.887
+  ],
+  "armor_dimensions_m": [
+    0.09,
+    0.055,
+    0.006
+  ],
+  "marker_center_m": [
+    -11.515,
+    0.02,
+    1.17
+  ],
+  "marker_normal": [
+    1,
+    0,
+    0
+  ],
+  "marker_radius_m": 0.0275,
+  "marker_wavelength_nm": 520,
+  "marker_luminous_intensity_cd_approx": 10,
+  "marker_source": "RMUC 2026 rulebook V2.2.0 dart guidance lamp specification",
+  "marker_illumination_state_modelled": false,
+  "provenance": "Team assignment follows the user's 2026-09-12 correction. Armor footprint is a bounded test patch, not full measured armor dimensions. Marker diameter and optical specifications come from the RMUC 2026 rulebook; its mirrored world pose remains provisional. No real-hardware camera calibration."
+}

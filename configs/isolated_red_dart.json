@@ -1,0 +1,11 @@
+{
+  "source_scene": "artifacts/isolated-dock-base-20260916-v6/scene.xml",
+  "source_scene_sha256": "70ef7bf0462cac5a0a5380cf3874f914df8d9886b8f767f31a8660fe433f36aa",
+  "field_scene": "rm27/simulation/field/rmuc2026_battlefield_mjcf/model.xml",
+  "field_scene_sha256": "b363ffd0c37dea3e6a78ee4881789d8a25896b67a301d5a8614d38a060b02811",
+  "launcher_body": "launch_station_red",
+  "remove_geom_prefixes": ["field__visual__hangar_red_", "field__collision__hangar_red_"],
+  "remove_geom_names": ["test_column_footing"],
+  "selection_evidence": "research/Darts/config.json identifies launch_station_red as the red dart station. Import that complete named assembly, without the adjacent commanding highland.",
+  "scope": "2026-09-27: derive a new scene from v6; remove only the red H hangar pedestal and its footing, retain the separate rm27_dock and all blue-base geometry, and add the existing red dart station at its original world pose."
+}

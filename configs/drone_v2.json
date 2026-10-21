@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "model": "cad_v2",
+  "name": "26droneVer2_frame5_150g",
+  "runtime_package": "components/rm_mjcf/rm27_drone_mjcf",
+  "source_cad": "data/references/cad_raw/26droneVer2.STEP",
+  "source_sha256": "7023e12af43b98575ebd4b8abb5972f13204e6fbe727c5fd5ed787e59bc88787",
+  "removed_parts": ["26dronejiangbao3.0", "26dronejiangbao3.0-2"],
+  "core_board_size_mm": [30, 65, 5],
+  "core_board_placement": "Centered over battery, long axis parallel, bottom flush with top plate upper surface",
+  "mass_kg": 0.15,
+  "mass_evidence": "User reported ready-to-fly mass including battery on 2026-10-13; core board was omitted from CAD",
+  "outer_width_m": 0.114,
+  "outer_height_m": 0.045,
+  "propeller_diameter_m": 0.0508,
+  "rotor_center_offset_m": 0.0275,
+  "motor": "1103 9600KV, prior user inventory; not identified from CAD",
+  "body_frame": "+X toward camera, +Y left, +Z up; CAD mapping (Z,X,Y); simulation convention, not FC calibration",
+  "com_height_above_bottom_m_assumed": 0.0225,
+  "engineering_estimates": {
+    "inertia_model": "uniform 114 x 114 x 45 mm envelope box about its center, not a CAD density calculation",
+    "max_rotor_thrust_N": 1.103625,
+    "thrust_to_weight": 3.0,
+    "motor_time_constant_s": 0.04,
+    "yaw_torque_per_thrust_m": 0.018,
+    "contact_friction": [0.6, 0.005, 0.0001],
+    "contact_solref": [0.004, 1],
+    "ring_center_radius_m": 0.028,
+    "ring_tube_radius_m": 0.0015,
+    "ring_segments": 24
+  },
+  "limitations": "150 g is user-reported. COM, inertia, thrust, motor lag, yaw torque, motor spin order and rigid collision proxies are uncalibrated simulation assumptions. No aerodynamics, propeller strikes, structural deformation or sensor calibration. Historical 180 g results do not validate this model."
+}

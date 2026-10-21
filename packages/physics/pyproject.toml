@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rm27-contact-physics"
+version = "0.1.0"
+description = "Explicit-config native MuJoCo contact physics and evaluation for RM27"
+requires-python = ">=3.12,<3.13"
+dependencies = ["mujoco==3.12.0", "numpy==2.5.1", "scipy==1.18.0"]
+
+[tool.setuptools]
+packages = ["rm27_contact_physics"]
+package-dir = {"" = "src"}
+include-package-data = false

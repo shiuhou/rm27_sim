@@ -1,0 +1,30 @@
+{
+  "body": "uav",
+  "camera_slot": "overview_top",
+  "position_body_m": [-0.0539003225751385, 0.0000058800667436, -0.0046467820446251],
+  "forward_body": [-0.9396926207859105, 0.0, -0.34202014332566283],
+  "up_reference_body": [0.0, 0.0, 1.0],
+  "vertical_fov_degrees": 60.0,
+  "near_clip_m": 0.001,
+  "cad_evidence": {
+    "source": "data/references/cad_raw/2627drone_ver1.STEP",
+    "sha256": "2c7ef76d08ea9b51c4d9f1a429cbffa4d4002d4b5eba3fff224d1b6420480893",
+    "solid_index": 364,
+    "front_face_index": 20,
+    "cylinder_radius_mm": 7.5,
+    "front_face_center_cad_mm": [0.12962617172649887, 7.680252660744133, 979.3589331158178],
+    "outward_axis_cad": [0.0, 0.34202014332566283, -0.9396926207859105],
+    "cad_origin_mm": [0.13550623847009646, 23.991558562902586, 1033.2592556909563],
+    "cad_to_display_body": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
+    "display_body_height_m": 0.04191617589356702,
+    "display_body_to_teacher_rotation": [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+    "interpretation": "User identifies the front cylinder as the lens. The 15 mm diameter circular front face supplies a virtual viewpoint; its axis is 20 degrees below the CAD horizontal."
+  },
+  "assumptions": [
+    "The teacher flight uses a symmetric simplified vehicle, not the static CAD aircraft.",
+    "For this preview only, CAD camera-side +Y maps to teacher body -X (the outbound-facing side at initial yaw); CAD bounding-box center maps to teacher body origin.",
+    "CAD front-face center is used as a virtual optical center, not a measured entrance pupil or sensor center.",
+    "The CAD-to-teacher mapping is not a measured center of mass, flight-controller alignment or real sensor extrinsic calibration.",
+    "Pinhole FOV is assumed; no lens distortion, exposure, motion blur, rolling shutter or sensor noise."
+  ]
+}

@@ -1,0 +1,74 @@
+<mujoco model="minimal_x_quadrotor_m1">
+  <compiler angle="degree" autolimits="true"/>
+  <!-- 控制迴圈與物理積分共用 0.002 s timestep，也就是 500 Hz。 -->
+  <!-- M1：density/viscosity 啟用 MuJoCo 內建流體交互（等效橢球近似），
+       對所有機體 geom 施加與速度反向的阻力與黏性項；不含槳葉尾流、
+       地面效應或升力模型。這只是溫和的空氣阻尼，不是精確氣動模型。 -->
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="RK4"
+          density="1.2" viscosity="1.8e-5"/>
+
+  <visual>
+    <headlight ambient="0.35 0.35 0.35" diffuse="0.75 0.75 0.75" specular="0.2 0.2 0.2"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="135" elevation="-22"/>
+  </visual>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.18 0.28 0.40" rgb2="0.02 0.03 0.05" width="512" height="3072"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.25 0.25 0.25" rgb2="0.35 0.35 0.35" width="512" height="512"/>
+    <material name="ground_material" texture="grid" texrepeat="10 10" reflectance="0.08"/>
+    <material name="carbon" rgba="0.10 0.12 0.14 1"/>
+    <material name="front" rgba="0.90 0.18 0.12 1"/>
+    <material name="rear" rgba="0.15 0.40 0.90 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1" directional="true"/>
+    <geom name="ground" type="plane" size="12 12 0.1" material="ground_material" friction="1 0.005 0.0001"/>
+
+    <!-- 機體座標：+X 朝紅色機鼻、+Y 朝左、+Z 朝上；控制器也遵守此約定。 -->
+    <body name="quadrotor" pos="0 0 0.12">
+      <freejoint name="root"/>
+      <!-- 明確指定 1 kg 質量與主軸慣量，避免 MuJoCo 從外觀 geom 反推。 -->
+      <inertial pos="0 0 0" mass="1.0" diaginertia="0.018 0.018 0.030"/>
+
+      <geom name="fuselage" type="box" size="0.105 0.075 0.035" material="carbon"/>
+      <geom name="arm_fl_rr" type="capsule" fromto="-0.163 -0.163 0 0.163 0.163 0" size="0.012" material="carbon"/>
+      <geom name="arm_fr_rl" type="capsule" fromto="-0.163 0.163 0 0.163 -0.163 0" size="0.012" material="carbon"/>
+
+      <!-- 紅色機鼻只用於辨認 +X，方便觀察 WASD 是否依當前 yaw 移動。 -->
+      <geom name="nose" type="box" pos="0.125 0 0" size="0.035 0.045 0.020" material="front"/>
+
+      <!-- prop_* 只負責外觀；真正的力施加在下方同位置的 rotor_*_site。 -->
+      <geom name="prop_fl" type="cylinder" pos="0.163 0.163 0.012" size="0.055 0.004" material="front" contype="0" conaffinity="0"/>
+      <geom name="prop_fr" type="cylinder" pos="0.163 -0.163 0.012" size="0.055 0.004" material="front" contype="0" conaffinity="0"/>
+      <geom name="prop_rr" type="cylinder" pos="-0.163 -0.163 0.012" size="0.055 0.004" material="rear" contype="0" conaffinity="0"/>
+      <geom name="prop_rl" type="cylinder" pos="-0.163 0.163 0.012" size="0.055 0.004" material="rear" contype="0" conaffinity="0"/>
+
+      <site name="rotor_fl_site" pos="0.163 0.163 0.012" size="0.014" rgba="1 0.3 0.2 1"/>
+      <site name="rotor_fr_site" pos="0.163 -0.163 0.012" size="0.014" rgba="1 0.3 0.2 1"/>
+      <site name="rotor_rr_site" pos="-0.163 -0.163 0.012" size="0.014" rgba="0.2 0.5 1 1"/>
+      <site name="rotor_rl_site" pos="-0.163 0.163 0.012" size="0.014" rgba="0.2 0.5 1 1"/>
+    </body>
+  </worldbody>
+
+  <!-- 每個 motor 的 ctrl 表示該槳「指令推力」（N）。gear 前三項的 0 0 1
+       表示沿 site 局部 +Z 施力；最後一項是每牛頓推力伴隨的反作用偏航
+       力矩（N·m/N）。FL/FR/RR/RL 正負交錯，模擬相鄰旋翼反向旋轉。
+       M1 與 M0 的差異：<motor> shortcut 是直驅（推力=指令，無延遲），
+       這裡改用等價的 <general>：gaintype="fixed" 且 gainprm 預設 1，
+       代表增益 1 N/N；dyntype="filterexact" 加上 dynprm 第一項
+       tau=0.040 s，讓實際推力遵循 Ḟ=(u-F)/tau 的一階馬達延遲。
+       名稱、site、gear、ctrlrange 與推力單位都與 M0 相同，
+       控制器仍然以牛頓為單位下指令，不需要知道延遲存在。 -->
+  <actuator>
+    <general name="rotor_fl" site="rotor_fl_site" gear="0 0 1 0 0 0.018" ctrlrange="0 8"
+             dyntype="filterexact" dynprm="0.040 0 0" gaintype="fixed" biastype="none"/>
+    <general name="rotor_fr" site="rotor_fr_site" gear="0 0 1 0 0 -0.018" ctrlrange="0 8"
+             dyntype="filterexact" dynprm="0.040 0 0" gaintype="fixed" biastype="none"/>
+    <general name="rotor_rr" site="rotor_rr_site" gear="0 0 1 0 0 0.018" ctrlrange="0 8"
+             dyntype="filterexact" dynprm="0.040 0 0" gaintype="fixed" biastype="none"/>
+    <general name="rotor_rl" site="rotor_rl_site" gear="0 0 1 0 0 -0.018" ctrlrange="0 8"
+             dyntype="filterexact" dynprm="0.040 0 0" gaintype="fixed" biastype="none"/>
+  </actuator>
+</mujoco>
