@@ -7,3 +7,5 @@ Pillow>=10
 pymavlink==2.4.49
 matplotlib>=3.9
 opencv-python-headless>=4.10
+shapely>=2.1,<3
+mapbox-earcut>=2,<3
