@@ -728,3 +728,19 @@ policy 或 companion computer 只需要輸出 (vx, vy, vz, yaw_rate)，經過
 - 失聯策略是懸停，不會自動返航或自動降落。
 - 這是易懂、可擴充的 simulation baseline，不代表實機飛行安全性。
 - 不依賴 ROS、ArduPilot、PX4 或其他大型飛控框架。
+
+## 場地碰撞重建
+
+```bash
+python -m rm27_sim.simulation.field_collision /path/to/rmuc2027_battlefield_mjcf/model.xml artifacts/field-collision
+```
+
+輸出目錄必須尚不存在。工具從 `visual_*` mesh 的實際世界座標建立表面碰撞，
+輸出 `collision_assets.xml`、`collision_geoms.xml` 和含來源雜湊的 `manifest.json`，
+不直接寫入輸入場地。輸出 geoms 使用場地既有的 `collision` default class。
+採用連通面、平面誤差檢查、保留凹形及孔洞的凸分區，避免整件 AABB 填實通道。
+預設平面偏差上限 1 mm、薄殼厚 5 mm、輪廓簡化 2 mm；省略面積小於
+0.001 m² 的平面片，填平無法容納直徑 10 mm 圓盤的緊固孔。
+薄殼設定 `priority=1`、`solref=".004 1"`，防止與動態物體預設軟接觸混合後穿透；
+這是 2 ms 步長下的工程接觸設定，並非實測材料參數。更高速度須另行驗證。
+`shapely` 與 `mapbox-earcut` 列於 `requirements-simulation.txt`。
