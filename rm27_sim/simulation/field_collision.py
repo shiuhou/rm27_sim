@@ -25,6 +25,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial.transform import Rotation
+from scipy.spatial import ConvexHull
 import shapely
 from shapely.geometry import Polygon
 
@@ -230,13 +231,63 @@ def _add_shell(assets, body, cache, points, normal, name, thickness):
                   quat=_numbers(rotation[[3,0,1,2]]),**common)
 
 
+def _add_convex_detail(assets, body, vertices, faces, name, tolerance):
+    """Explicitly opted-in, nearly convex small parts; never bridge components."""
+    if not np.isfinite(tolerance) or tolerance <= 0:
+        raise ValueError('Convex detail needs a positive surface tolerance')
+    labels = _surface_labels(vertices, faces)
+    errors = []
+    for label in np.unique(labels):
+        triangles = vertices[faces[labels == label]]
+        points = np.unique(triangles.reshape(-1, 3), axis=0)
+        center = points.mean(axis=0)
+        local = points-center
+        hull = ConvexHull(local)
+        # Every input triangle must lie on a hull plane within the explicit
+        # tolerance. This rejects recesses even when their vertices are convex.
+        planes = hull.equations
+        distances = np.abs((triangles-center) @ planes[:, :3].T + planes[:, 3])
+        error = float(np.min(np.max(distances, axis=1), axis=1).max())
+        if error > tolerance:
+            raise ValueError(f'{name}: convex detail would fill a {error:g} m recess')
+        mesh_name = f'{name}_detail_{int(label)}'
+        ET.SubElement(assets, 'mesh', name=mesh_name, vertex=_numbers(local[hull.vertices]))
+        ET.SubElement(body, 'geom', name=mesh_name, type='mesh', mesh=mesh_name,
+                      pos=_numbers(center), mass='0', **{'class': 'collision'},
+                      priority='1', solref='.004 1')
+        errors.append(error)
+    return errors
+
+
+def _back_surface(points, normal, rule, thickness):
+    """Place an explicitly selected front surface's shell behind its skin."""
+    for plane in rule.get('backed_planes', []):
+        origin = np.asarray(plane['point_m'], float)
+        outward = np.asarray(plane['outward'], float)
+        if not np.isfinite(outward).all() or np.linalg.norm(outward) < 1e-12:
+            raise ValueError('Backed plane requires a finite nonzero outward normal')
+        outward /= np.linalg.norm(outward)
+        distance = (points-origin) @ outward
+        low, high = plane['plane_range_m']
+        if (abs(normal @ outward) > .9999 and
+                np.max(np.linalg.norm(points-origin, axis=1)) <= plane['radius_m'] and
+                distance.min() >= low and distance.max() <= high):
+            return -normal * np.sign(normal @ outward) * thickness/2
+    return np.zeros(3)
+
+
 def build(model_path: Path, output: Path, *, minimum_area=.001,
           plane_tolerance=.001, thickness=.005, minimum_hole_width=.01,
-          outline_tolerance=.002):
+          outline_tolerance=.002, detail_config: Path | None = None):
     if minimum_area <= 0 or plane_tolerance <= 0 or thickness <= 2 * plane_tolerance:
         raise ValueError('positive tolerances and thickness > 2 * plane_tolerance required')
     output.mkdir(parents=True, exist_ok=False)
     model_path = model_path.resolve()
+    if detail_config is not None and not Path(detail_config).is_file():
+        raise FileNotFoundError(detail_config)
+    detail_config = Path(detail_config) if detail_config is not None else model_path.parent/'collision_details.json'
+    details = json.loads(detail_config.read_text()) if detail_config.exists() else {'sources': {}}
+    rules = details['sources']
     model = mujoco.MjModel.from_xml_path(str(model_path))
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
@@ -260,6 +311,18 @@ def build(model_path: Path, output: Path, *, minimum_area=.001,
         source = model_path.parent / 'assets' / (name + '.msh')
         record = {'source': name, 'sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
                   'source_triangles': len(faces), 'parts': 0, 'max_plane_displacement_m': 0.}
+        rule = rules.get(name, {})
+        if rule and rule['sha256'] != record['sha256']:
+            raise ValueError(f'{name}: detail source changed; review the collision policy')
+        if rule.get('mode') == 'convex':
+            errors = _add_convex_detail(assets, body, vertices, faces, name,
+                                        rule['maximum_surface_error_m'])
+            record.update(parts=len(errors), convex_surface_error_m=max(errors), mode='convex')
+            records.append(record)
+            continue
+        if rule.get('mode', 'surface') != 'surface':
+            raise ValueError(f'{name}: unsupported detail mode')
+        backed = 0
         for points, normal, error in surface_parts(vertices, faces, minimum_area=minimum_area,
                                                    plane_tolerance=plane_tolerance,
                                                    minimum_hole_width=minimum_hole_width,
@@ -270,24 +333,38 @@ def build(model_path: Path, output: Path, *, minimum_area=.001,
             seen.add(signature)
             mesh_name = f'rmuc2027_surface_{count:05d}'
             _add_shell(assets,body,mesh_cache,points,normal,mesh_name,thickness)
+            shift = _back_surface(points, normal, rule, thickness)
+            if np.any(shift):
+                geom = body[-1]
+                geom.set('pos', _numbers(np.fromstring(geom.get('pos'), sep=' ')+shift))
+                backed += 1
             record['parts'] += 1
             record['max_plane_displacement_m'] = max(record['max_plane_displacement_m'], error)
             count += 1
+        if rule.get('backed_planes'):
+            if not backed:
+                raise ValueError(f'{name}: no front surfaces matched the detail policy')
+            record['backed_surface_parts'] = backed
         records.append(record)
         print(f'{name}: {record["parts"]} parts; cumulative {count}', flush=True)
+    if set(rules)-{r['source'] for r in records}:
+        raise ValueError('Detail policy refers to missing visual sources')
     for filename, tree in [('collision_assets.xml', assets_root), ('collision_geoms.xml', geoms_root)]:
         ET.indent(tree, space='  ')
         ET.ElementTree(tree).write(output/filename, encoding='UTF-8', xml_declaration=True)
     manifest = {'method': 'convex partitions of bounded-error surface planes; finite centered shells',
                 'minimum_patch_area_m2': minimum_area, 'maximum_plane_displacement_m': plane_tolerance,
                 'shell_thickness_m': thickness, 'outline_simplification_m': outline_tolerance,
-                'minimum_hole_width_m': minimum_hole_width, 'collision_geoms': count,
-                'unique_collision_meshes': len(mesh_cache), 'mesh_sharing_grid_m': 1e-5,
+                'minimum_hole_width_m': minimum_hole_width, 'collision_geoms': len(body),
+                'unique_collision_meshes': len(assets), 'mesh_sharing_grid_m': 1e-5,
                 'box_fit_tolerance_m': .0001, 'contact_priority': 1,
                 'contact_solref': [.004,1],
                 'elapsed_seconds': time.monotonic()-start, 'sources': records,
                 'outputs': {p: hashlib.sha256((output/p).read_bytes()).hexdigest()
                             for p in ['collision_assets.xml','collision_geoms.xml']}}
+    if rules:
+        manifest['detail_policy'] = details
+        manifest['detail_policy_sha256'] = hashlib.sha256(detail_config.read_bytes()).hexdigest()
     (output/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
     return manifest
 
@@ -301,11 +378,13 @@ def main():
     parser.add_argument('--thickness', type=float, default=.005)
     parser.add_argument('--minimum-hole-width', type=float, default=.01)
     parser.add_argument('--outline-tolerance', type=float, default=.002)
+    parser.add_argument('--detail-config', type=Path,
+                        help='Source-pinned detail policy; defaults to collision_details.json beside model')
     args = parser.parse_args()
     result = build(args.model, args.output, minimum_area=args.minimum_area,
                    plane_tolerance=args.plane_tolerance, thickness=args.thickness,
                    minimum_hole_width=args.minimum_hole_width,
-                   outline_tolerance=args.outline_tolerance)
+                   outline_tolerance=args.outline_tolerance, detail_config=args.detail_config)
     print(json.dumps({k:v for k,v in result.items() if k!='sources'}, indent=2))
 
 

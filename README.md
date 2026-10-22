@@ -744,3 +744,9 @@ python -m rm27_sim.simulation.field_collision /path/to/rmuc2027_battlefield_mjcf
 薄殼設定 `priority=1`、`solref=".004 1"`，防止與動態物體預設軟接觸混合後穿透；
 這是 2 ms 步長下的工程接觸設定，並非實測材料參數。更高速度須另行驗證。
 `shapely` 與 `mapbox-earcut` 列於 `requirements-simulation.txt`。
+
+若場地旁有 `collision_details.json`，生成器會自動讀取以來源雜湊鎖定的細節設定；
+也可用 `--detail-config FILE` 指定。RMUC2027 設定保留兩側基地綠燈的獨立凸形
+碰撞，並讓正面裝甲板及前框薄殼向內延伸、外表面對齊可見模型。
+凸形模式逐一處理連通部件並檢查每個來源三角面到凸包面的誤差，超限即失敗，
+不會將分離部件連成一塊。來源雜湊變更、缺少來源或未命中裝甲板選取範圍也會失敗。

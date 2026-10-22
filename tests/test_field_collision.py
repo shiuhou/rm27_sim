@@ -1,5 +1,7 @@
 """Regression coverage for concavities and transforms in the field converter."""
 from pathlib import Path
+import hashlib
+import json
 import struct
 import xml.etree.ElementTree as ET
 
@@ -100,3 +102,82 @@ def test_five_mm_shell_stops_one_metre_drop_and_five_mps_impact():
     for _ in range(100):
         mujoco.mj_step(model,data);hits+=data.ncon
     assert hits>0 and data.qpos[2]>0
+
+
+def test_detail_policy_preserves_two_small_lenses_without_filling_the_gap(tmp_path):
+    from scipy.spatial import ConvexHull
+    # Two 20 mm octahedral lenses: each face is below the default area cutoff.
+    one = np.vstack([np.eye(3), -np.eye(3)])*.01
+    vertices = np.vstack([one, one+[.1,0,0]]).astype('<f4')
+    faces = np.vstack([ConvexHull(one).simplices, ConvexHull(one).simplices+6]).astype('<i4')
+    (tmp_path/'assets').mkdir()
+    source = tmp_path/'assets/visual_000.msh'
+    with source.open('wb') as f:
+        f.write(struct.pack('<4i',len(vertices),0,0,len(faces)))
+        vertices.tofile(f); faces.tofile(f)
+    root = ET.fromstring('''<mujoco><default><default class="collision">
+      <geom group="3"/></default></default><asset>
+      <mesh name="visual_000" file="assets/visual_000.msh" inertia="shell"/></asset>
+      <worldbody><geom name="visual_000" type="mesh" mesh="visual_000"
+      group="2" contype="0" conaffinity="0"/></worldbody></mujoco>''')
+    entry = tmp_path/'model.xml'; ET.ElementTree(root).write(entry)
+    assert build(entry, tmp_path/'before')['collision_geoms'] == 0
+    policy = {'sources': {'visual_000': {'sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
+              'mode': 'convex', 'maximum_surface_error_m': .0002}}}
+    policy_path = tmp_path/'collision_details.json'
+    policy_path.write_text(json.dumps(policy))
+    result = build(entry, tmp_path/'after')
+    assert result['collision_geoms'] == 2
+    ET.SubElement(root, 'include', file='after/collision_assets.xml')
+    ET.SubElement(root.find('worldbody'), 'include', file='after/collision_geoms.xml')
+    model = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding='unicode'),
+                                          assets={'assets/visual_000.msh': source.read_bytes(),
+                                                  'after/collision_assets.xml': (tmp_path/'after/collision_assets.xml').read_bytes(),
+                                                  'after/collision_geoms.xml': (tmp_path/'after/collision_geoms.xml').read_bytes()})
+    data = mujoco.MjData(model); mujoco.mj_forward(model, data)
+    gid = np.zeros(1, np.int32)
+    # Sample face interiors: a ray exactly through a triangulation vertex can
+    # be rejected by the renderer's triangle-edge roundoff tolerance.
+    for x, expected in [(.001, .093), (.101, .093), (.05, -1.)]:
+        distance = mujoco.mj_ray(model, data, np.array([x,.002,.1]), np.array([0.,0.,-1.]),
+                                 np.array([0,0,0,1,0,0],np.uint8), 1, -1, gid)
+        assert distance == pytest.approx(expected, abs=1e-6)
+    policy['sources']['visual_000']['sha256'] = 'stale'
+    policy_path.write_text(json.dumps(policy))
+    with pytest.raises(ValueError, match='source changed'):
+        build(entry, tmp_path/'stale')
+    with pytest.raises(FileNotFoundError):
+        build(entry, tmp_path/'missing', detail_config=tmp_path/'missing.json')
+
+
+def test_convex_detail_rejects_recessed_faces():
+    from scipy.spatial import ConvexHull
+    from rm27_sim.simulation.field_collision import _add_convex_detail
+    points = np.array([[x,y,z] for x in [-.03,.03] for y in [-.03,.03] for z in [-.03,.03]])
+    hull = ConvexHull(points)
+    tri = hull.simplices[0]
+    inset = points[tri].mean(axis=0)-hull.equations[0,:3]*.01
+    vertices = np.vstack([points, inset])
+    faces = np.vstack([hull.simplices[1:], [tri[0],tri[1],8], [tri[1],tri[2],8], [tri[2],tri[0],8]])
+    with pytest.raises(ValueError, match='recess'):
+        _add_convex_detail(ET.Element('asset'), ET.Element('body'), vertices, faces, 'recess', .0002)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_backed_skin_aligns_outer_contact_surface_without_moving_unselected_surfaces(sign):
+    from rm27_sim.simulation.field_collision import _add_shell, _back_surface
+    points = np.array([[-.04,-.04,0],[.04,-.04,0],[.04,.04,0],[-.04,.04,0.]])
+    normal = np.array([0.,0.,sign])
+    rule = {'backed_planes': [{'point_m': [0,0,0], 'outward': [0,0,1],
+                              'radius_m': .1, 'plane_range_m': [-.0001,.0001]}]}
+    shift = _back_surface(points, normal, rule, .005)
+    assert shift == pytest.approx([0,0,-.0025])
+    assert _back_surface(points+[0,0,.02], normal, rule, .005) == pytest.approx([0,0,0])
+    root = ET.fromstring('<mujoco><default><default class="collision"><geom/></default></default></mujoco>')
+    assets = ET.SubElement(root, 'asset'); body = ET.SubElement(ET.SubElement(root,'worldbody'), 'body')
+    _add_shell(assets, body, {}, points+shift, normal, 'skin', .005)
+    model = mujoco.MjModel.from_xml_string(ET.tostring(root,encoding='unicode'))
+    data = mujoco.MjData(model); mujoco.mj_forward(model,data)
+    distance = mujoco.mj_ray(model,data,np.array([0.,0.,.1]),np.array([0.,0.,-1.]),
+                             np.ones(6,np.uint8),1,-1,np.zeros(1,np.int32))
+    assert distance == pytest.approx(.1,abs=1e-9)
