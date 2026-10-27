@@ -1,0 +1,160 @@
+{
+  "description": "Blue-base horizontal carriage: upper armor, green lamp, connected brackets and carriage hardware. Lower sloped armor and rail-fastening screws remain fixed. Selection is tied to the supplied mesh topology and source hashes; user confirmed the moving assembly. Guide travel is derived from the two rail components and the full moving assembly footprint.",
+  "field_path": "components/rm_mjcf/rmuc2027_battlefield_mjcf/model.xml",
+  "axis": [
+    0,
+    -1,
+    0
+  ],
+  "pivot_m": [
+    11.6,
+    0,
+    1.25
+  ],
+  "source_files": {
+    "model.xml": "727b8f7f5a4ac02985059c5873dc23a7ee601f1f282aa88ca741b4c42d4df51f",
+    "visual_geoms.xml": "595546a5814861e4a386cfe3998d1daba95ad55693313ab540ed423470b26277",
+    "collision_assets.xml": "ae7f891f0d25b69b825773ee6a8d3e5ae184992d5c75fc57679f933066ffb10e",
+    "collision_geoms.xml": "cd90fe3491c6b6c2fb8bd4e98e2bbd907b0519ff8c8223be745f10b700a2a49c",
+    "visual_assets.xml": "16d054075c05d5b1e59205e9f090521cb5a419436865901ece7004a37fd78720"
+  },
+  "sources": {
+    "visual_109": {
+      "sha256": "1be705ace79fa8aefb6cda6d45b3812dd281b35d7767c8d4fb5103a7a7d19789",
+      "moving_components": [
+        84,
+        85,
+        92,
+        93,
+        98,
+        99,
+        108,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        119,
+        120,
+        122,
+        123,
+        128,
+        129,
+        130,
+        131,
+        133,
+        134,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        183,
+        184,
+        185,
+        186,
+        197,
+        212,
+        213,
+        216,
+        219,
+        233,
+        234,
+        237,
+        238,
+        239,
+        240,
+        248,
+        249,
+        250,
+        251,
+        264,
+        265,
+        266,
+        267,
+        271,
+        272,
+        287,
+        288,
+        289,
+        290,
+        291,
+        296,
+        297,
+        298
+      ],
+      "collision_index_range": [
+        34949,
+        35302
+      ]
+    },
+    "visual_115": {
+      "sha256": "b17bc880f01a6b22a2776408b2e90c2bb7e10442d6370af4ab3d1058686d9a65",
+      "moving_components": [
+        4,
+        10
+      ],
+      "collision_index_range": [
+        35356,
+        36286
+      ]
+    },
+    "visual_116": {
+      "sha256": "60a6eb8a755f09744bd993e1e858f3ec8857260e562a1067cfdd1f182eefe1e3",
+      "moving_components": [
+        0
+      ],
+      "collision_names": [
+        "visual_116_detail_0"
+      ]
+    },
+    "visual_121": {
+      "sha256": "bfcb364b49bd67156b0aca3ab7100d9848e2e75f1cd1bf8020e1974cb59503b2",
+      "moving_components": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "collision_index_range": [
+        38005,
+        38027
+      ]
+    },
+    "visual_122": {
+      "sha256": "2f0921373acc852d01f1c5c9ada1c1088cb985846e76ca9b7a14fc5ebc7df166",
+      "moving_components": [
+        0
+      ],
+      "collision_index_range": [
+        38027,
+        38042
+      ]
+    }
+  },
+  "guide": {
+    "source": "visual_109",
+    "components": [
+      144,
+      232
+    ]
+  },
+  "dynamics_estimate": {
+    "mass_kg": 1.0,
+    "diaginertia_kg_m2": [
+      0.01,
+      0.01,
+      0.01
+    ],
+    "kp": 1000,
+    "kv": 80,
+    "force_limit_n": 100,
+    "speed_m_s": 0.15,
+    "note": "Simulation demonstration estimates; no measured motor, friction, mass or inertia identification."
+  }
+}

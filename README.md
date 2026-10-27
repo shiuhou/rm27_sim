@@ -47,6 +47,126 @@ PX4/VIO 整合、改變路線控制或把動畫當成閉環驗證。現有 SITL 
 輸出目錄每次必須是新目錄。原錄製和二進位模型保留原位；MJB 回放需要相容的
 MuJoCo 版本。舊 `rm27` 命令只是相容轉接，今後仿真程式請改本 repo 的 `rm27_sim/`。
 
+## 鏢組交付與接入：完整場地的可動基地
+
+主要交付物是 `CosmosMount/rm_mjcf` 中的
+`rmuc2027_moving_base_mjcf/model.xml` **完整可動場地**及其整個目錄。
+鏢組直接載入這份場地，接回自己的物體、相機和控制；不需要先跑場地生成器。
+綠燈、上方裝甲與支架一起沿導軌移動，碰撞跟隨；下方斜裝甲、導軌、紅方基地固定。
+來源與幾何接口以資產目錄 README、`assembly_manifest.json` 為準。
+
+### 隊友下載後先跑展示
+
+以下假設兩個倉庫放在同一父目錄，使用本功能的 `feat/moving-base-target` 分支。
+Python 3.12 / MuJoCo 3.12.0 已驗證；Linux 有圖形桌面時可開啟展示視窗。
+
+```bash
+git clone --branch feat/moving-base-target https://github.com/CosmosMount/rm_mjcf.git
+git clone --branch feat/moving-base-target https://github.com/shiuhou/rm27_sim.git
+cd rm27_sim
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-base-rail.txt
+python -m rm27_sim.simulation.base_rail \
+  --scene ../rm_mjcf/rmuc2027_moving_base_mjcf/model.xml --speed 0.30
+```
+
+只需三個執行依賴，不必安裝完整 `requirements-simulation.txt`，也不需要
+設定本機資產登記。模型 XML 編譯需數分鐘；發布內容不含大型 `.mjb` 快取。
+點選獨立的 **Base rail control** 視窗：
+
+- 按住 **← / →**：左右移動；鬆開停止。
+- **R**：移到行程內一個隨機位置後保持；再次按 R 產生新目標。
+- **Home**：回中央；**Space**：停止；**Esc**：關閉展示。
+- 失焦或通訊逾時停止；重新聚焦後先鬆開方向鍵。
+
+行程約 ±30.05 cm。`--speed` 單位 m/s，預設 `0.15`；`0.30` 為 30 cm/s，
+套用到方向鍵、隨機移動與回中央。這是位置指令的速度限制，實際滑台仍受驅動動態影響。
+`--seed 42` 可重現隨機目標序列。質量、慣量、馬達增益和推力上限仍是展示估計。
+
+### 接入自己的模擬迴圈
+
+`rm27_sim/simulation/base_rail_control.py` 是唯一的標靶控制實作，只依賴 NumPy。
+可以直接把這個檔案複製到自己的工程，用 `from base_rail_control import RailMotion`；
+不需要引入本 repo 的無人機程式、Pygame、UDP 或場地轉換庫。
+以下是完整的無視窗範例（在本 repo 內執行時用下列 import）：
+
+```python
+import mujoco
+from rm27_sim.simulation.base_rail_control import RailMotion
+
+model = mujoco.MjModel.from_xml_path(
+    "../rm_mjcf/rmuc2027_moving_base_mjcf/model.xml")
+data = mujoco.MjData(model)
+rail = RailMotion(model, data, speed=0.30, seed=42)
+
+# 只選一次目標：移動、到位後保持兩秒，再選下一個。
+for trial in range(3):
+    target = rail.random_goal()
+    deadline = data.time + abs(target - rail.command) / rail.speed + 4.0
+    while not rail.reached():
+        if data.time >= deadline:
+            raise RuntimeError("滑台未在預期時間內到位")
+        rail.tick()  # 在自己的每個物理步 mj_step 前呼叫一次
+        mujoco.mj_step(model, data)
+    hold_until = data.time + 2.0
+    while data.time < hold_until:
+        rail.tick()
+        mujoco.mj_step(model, data)
+```
+
+實際接入時，使用團隊已組合好的 `model` 和同一個 `data` 建立 `RailMotion`；
+把 `rail.tick()` 放到既有 `mj_step` 前，不要再啟動第二個物理迴圈。
+其他控制程式先完成自己的 `data.ctrl` 更新，再呼叫 `rail.tick()`，避免覆蓋滑台指令。
+目標只在試驗切換時選取，不要每一幀都呼叫 `random_goal()`。
+控制器不推進時間、不改 `qpos/qvel`，只寫入具名的 `blue_base_drive` 致動器。
+它依名稱查找關節與致動器，允許場景同時含有其他動態物體和控制輸入。
+若組合場景加了名稱前綴，可傳入 `joint=` 和 `actuator=`。
+
+| 呼叫 | 功能 |
+| --- | --- |
+| `rail.random_goal()` | 回傳並設定一個行程內的隨機位置，單位 m |
+| `rail.set_goal(0.10)` | 移到相對中央 +10 cm，超出範圍時限制到端點 |
+| `rail.set_goal(0)` | 回中央 |
+| `rail.speed = 0.30` | 修改移動速度，必須為有限正數 |
+| `rail.stop()` | 以當前實際位置停止並保持 |
+| `rail.reached()` | 位置誤差 <1 mm 且速度 <5 mm/s；僅供試驗排程 |
+| `rail.reset(seed=42)` | 在宿主重設 `MjData` 後同步控制狀態並重設亂數 |
+
+`q>0` 沿世界 −Y，並非任何相機的固定畫面右方。
+到位判斷讀取 MuJoCo 狀態，不能當作視覺算法的估計輸出。
+示範只提供標靶運動，不含團隊的視覺、飛行或尾翼算法。
+
+### 驗證與維護者重建
+
+```bash
+python -m rm27_sim.simulation.base_rail \
+  --scene ../rm_mjcf/rmuc2027_moving_base_mjcf/model.xml \
+  --headless --speed 0.30 --seed 42
+```
+
+這會驗證左右端點、中央及五個隨機位置，輸出 `passed` 和實際到位狀態。
+錄影另需 `opencv-python-headless`，加 `--video /path/to/demo.mp4`，
+無桌面渲染可使用 `MUJOCO_GL=egl`。
+完整幾何／碰撞測試需開發依賴及原始場地：
+
+```bash
+RM27_BASE_RAIL_SCENE=../rm_mjcf/rmuc2027_moving_base_mjcf/model.xml \
+  python -m pytest tests/test_base_rail.py -q
+```
+
+只有修改零件選取、導軌範圍或模型參數的維護者才需重建：安裝
+`requirements-simulation.txt`，以 `configure-assets --mjcf /path/to/rm_mjcf`
+登記原始資產，再執行：
+
+```bash
+python -m rm27_sim.integration.base_rail --output artifacts/base_rail --no-compile
+```
+
+輸出目錄必須尚未存在。`configs/base_rail.json` 鎖定來源雜湊與零件選擇；
+省略 `--no-compile` 會額外生成本機 `.mjb` 快取，用於反覆開啟本地展示。
+既有生成場景 `artifacts/base_rail/model.xml` 仍可用；正式交付入口以上述資產目錄為準。
+
 這是一個最小、可驗證的 MuJoCo 四旋翼 baseline。MuJoCo 物理模擬與 Pygame 飛行控制器是兩個獨立 process、兩個獨立視窗，透過 localhost UDP 傳送高層飛行命令與遙測。
 
 Pygame 是唯一飛行輸入視窗。MuJoCo Viewer 只負責顯示模擬與相機操作，沒有註冊 WASD、Q/E、R/F、T、L 等飛行 callback。Pygame 不會修改 MuJoCo state，也不會發送四個馬達推力。
