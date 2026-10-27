@@ -53,12 +53,14 @@ MuJoCo 版本。舊 `rm27` 命令只是相容轉接，今後仿真程式請改�
 `rmuc2027_moving_base_mjcf/model.xml` **完整可動場地**及其整個目錄。
 鏢組直接載入這份場地，接回自己的物體、相機和控制；不需要先跑場地生成器。
 綠燈、上方裝甲與支架一起沿導軌移動，碰撞跟隨；下方斜裝甲、導軌、紅方基地固定。
+目前以學長 `CosmosMount/rmuc2027_mjarena` 的 `ffd1eb7` 為底，保留小曲面修補、
+封口與波紋路高度場；整合可動基地、綠燈閉合碰撞和局部裝甲精度修正。
 來源與幾何接口以資產目錄 README、`assembly_manifest.json` 為準。
 
 ### 隊友下載後先跑展示
 
 以下假設兩個倉庫放在同一父目錄，使用本功能的 `feat/moving-base-target` 分支。
-Python 3.12 / MuJoCo 3.12.0 已驗證；Linux 有圖形桌面時可開啟展示視窗。
+Python 3.12 / MuJoCo 3.17.0 已驗證；Linux 有圖形桌面時可開啟展示視窗。
 
 ```bash
 git clone --branch feat/moving-base-target https://github.com/CosmosMount/rm_mjcf.git
@@ -72,7 +74,7 @@ python -m rm27_sim.simulation.base_rail \
 ```
 
 只需三個執行依賴，不必安裝完整 `requirements-simulation.txt`，也不需要
-設定本機資產登記。模型 XML 編譯需數分鐘；發布內容不含大型 `.mjb` 快取。
+設定本機資產登記。發布內容不含大型 `.mjb` 快取；首次載入時間取決於主機。
 點選獨立的 **Base rail control** 視窗：
 
 - 按住 **← / →**：左右移動；鬆開停止。
@@ -83,6 +85,30 @@ python -m rm27_sim.simulation.base_rail \
 行程約 ±30.05 cm。`--speed` 單位 m/s，預設 `0.15`；`0.30` 為 30 cm/s，
 套用到方向鍵、隨機移動與回中央。這是位置指令的速度限制，實際滑台仍受驅動動態影響。
 `--seed 42` 可重現隨機目標序列。質量、慣量、馬達增益和推力上限仍是展示估計。
+
+### mjviser 瀏覽器展示（選用）
+
+在相同環境安裝選用依賴後，以相同的完整場地開啟瀏覽器展示：
+
+```bash
+python -m pip install -r requirements-base-rail-browser.txt
+python -m rm27_sim.simulation.base_rail_browser \
+  --scene ../rm_mjcf/rmuc2027_moving_base_mjcf/model.xml \
+  --target-speed 0.30 --target-seed 42 --target-random
+```
+
+開啟終端顯示的本機網址。← / → 移動、T 隨機、Home 回中、Space 停止；
+P 暫停、R 重設整個模擬。這裡 R 的含義與 Pygame 展示不同。
+方向鍵失焦會釋放；隨機目標是自主移動，直到到位，失焦不會取消。
+`--target-random` 啟動時選一次隨機目標再保持；`--headless --steps 3000`
+可無視窗執行。此入口使用同一個 `base_rail_control.RailMotion`，不含飛行鍵盤控制。
+
+選用依賴鎖定學長公開倉庫 `ffd1eb7` 的場景組裝、mjviser 與 FPV API；
+會另外安裝上游套件，但本命令必須明確指定外部場地。
+可加 `--model /path/to/dart.xml --prefix dart/ --position X Y Z` 組入鏢模型，
+用 `--fpv-camera dart/camera_name --first-person` 顯示該模型相機。
+這只是場景／顯示接入；鏢組的控制迴圈需按下一節自行整合。
+上游程式授權見 `.agents/docs/mjarena_LICENSE.txt`。
 
 ### 接入自己的模擬迴圈
 
@@ -148,28 +174,32 @@ python -m rm27_sim.simulation.base_rail \
 這會驗證左右端點、中央及五個隨機位置，輸出 `passed` 和實際到位狀態。
 錄影另需 `opencv-python-headless`，加 `--video /path/to/demo.mp4`，
 無桌面渲染可使用 `MUJOCO_GL=egl`。
-完整幾何／碰撞測試需開發依賴及原始場地：
+整合版完整幾何／碰撞回歸需選用瀏覽器依賴與 pytest：
 
 ```bash
-RM27_BASE_RAIL_SCENE=../rm_mjcf/rmuc2027_moving_base_mjcf/model.xml \
-  python -m pytest tests/test_base_rail.py -q
+python -m pip install -r requirements-base-rail-browser.txt pytest
+RM27_REPAIRED_ARENA=../rm_mjcf/rmuc2027_moving_base_mjcf \
+  python -m pytest tests/test_repaired_arena.py -q
 ```
 
-只有修改零件選取、導軌範圍或模型參數的維護者才需重建：安裝
-`requirements-simulation.txt`，以 `configure-assets --mjcf /path/to/rm_mjcf`
-登記原始資產，再執行：
+回歸覆蓋保留地形雜湊、修補面唯一歸屬、整組平移／下裝甲固定、端點與隨機到位保持、
+三個位置的燈／裝甲射線、外部球接觸與無幽靈碰撞。1 m/s 球碰撞不代表高速飛鏢驗證。
+`tests/test_base_rail.py` 仍驗證獨立控制器與原始可動零件生成器；其完整場地測試使用
+原始生成結果（`RM27_BASE_RAIL_SCENE`），整合新場地則使用上述專用回歸。
+
+只有修改模型的維護者才需重建。安裝 `requirements-simulation.txt`，先取得未修改的
+學長場地 `ffd1eb7` 與原始可動零件場地 `rm_mjcf` commit `d86578e`，再執行：
 
 ```bash
-python -m rm27_sim.integration.base_rail --output artifacts/base_rail --no-compile
+python -m rm27_sim.integration.arena_base_rail \
+  --arena /path/to/upstream/rmuc2027_mjarena/arena_mjcf \
+  --carriage-source /path/to/rm_mjcf-at-d86578e/rmuc2027_moving_base_mjcf \
+  --output /new/output/directory
 ```
 
-輸出目錄必須尚未存在。`configs/base_rail.json` 鎖定來源雜湊與零件選擇；
-省略 `--no-compile` 會額外生成本機 `.mjb` 快取，用於反覆開啟本地展示。
-既有生成場景 `artifacts/base_rail/model.xml` 仍可用；正式交付入口以上述資產目錄為準。
-
-這是一個最小、可驗證的 MuJoCo 四旋翼 baseline。MuJoCo 物理模擬與 Pygame 飛行控制器是兩個獨立 process、兩個獨立視窗，透過 localhost UDP 傳送高層飛行命令與遙測。
-
-Pygame 是唯一飛行輸入視窗。MuJoCo Viewer 只負責顯示模擬與相機操作，沒有註冊 WASD、Q/E、R/F、T、L 等飛行 callback。Pygame 不會修改 MuJoCo state，也不會發送四個馬達推力。
+輸出目錄必須尚未存在，輸入來源雜湊會驗證。不要把已整合的新場地當成原始滑台輸入。
+`integration.base_rail` 與 `configs/base_rail.json` 保留供原始滑台來源重建；
+隊友正常使用只需載入正式交付的完整場地，不需生成器或個人工作區資產。
 
 ## 共用 Physics 套件與工作位置
 
