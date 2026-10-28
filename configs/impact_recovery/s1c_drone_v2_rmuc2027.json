@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "study": "S1c: S1b repeated with the Ver2 runtime aircraft MJCF and the RMUC2027 blue armor measurement",
+  "experiment_config": "configs/impact_recovery/contact_base_v2.json",
+  "vehicle_config": "configs/drone_v2.json",
+  "dynamics_profile": "configs/impact_recovery/dynamics_v2_150g.json",
+  "target_geometry": "configs/base_target.json",
+  "seed": 20261021,
+  "physical_scale": 1.0,
+  "trials_per_cell": 100,
+  "sampling": {
+    "normal_speed_m_s": [
+      1.5,
+      3.0
+    ],
+    "tangent_speed_m_s": [
+      0.0,
+      0.5
+    ],
+    "tilt_deg": [
+      0.0,
+      15.0
+    ],
+    "omega_norm_rad_s": [
+      0.0,
+      3.0
+    ],
+    "tangent_offset_m": [
+      0.0,
+      0.04
+    ],
+    "yaw_deg": [
+      0.0,
+      0.0
+    ]
+  },
+  "fixed": {
+    "gap_m": 0.02
+  },
+  "grid": {
+    "attitude_mode": [
+      "normal",
+      "level"
+    ],
+    "normal_speed_m_s": [
+      1.5,
+      2.25,
+      3.0
+    ]
+  },
+  "conditions": {
+    "A0_no_recovery": {
+      "mode": "none"
+    },
+    "A1_immediate": {
+      "mode": "stabilize"
+    },
+    "A1_immediate_px4": {
+      "mode": "stabilize",
+      "inner_loop": "px4"
+    }
+  },
+  "success": {
+    "max_body_rate_rad_s": 1.0,
+    "max_tilt_deg": 10.0,
+    "max_vertical_speed_m_s": 0.3,
+    "hold_s": 0.3
+  },
+  "status": "Same seed, ranges and grid as S1 (pre-impact cases and physical draws repeat). A0/A1 use the same CTBR proxy as S1 for a like-for-like before/after; A1_immediate_px4 uses the PX4 rate PID with hover-throttle thrust mapping and is PROVISIONAL because the yaw loop stability depends on the uncalibrated yaw torque coefficient.",
+  "rate_params": "configs/impact_recovery/px4_rate_1018.json",
+  "vehicle_mjcf": "components/rm_mjcf/rm27_drone_mjcf/dynamic/model.xml"
+}

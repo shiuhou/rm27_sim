@@ -28,7 +28,8 @@ def build(scene, output, config=ROOT/'configs/isolated_scene.json'):
     if output.exists():
         raise FileExistsError(f'Choose a new output directory: {output}')
     cfg = json.loads(Path(config).read_text())
-    target = json.loads((ROOT/'configs/base_target.json').read_text())
+    # This extractor is tied to the RMUC2026 source scene; keep its matching target estimate.
+    target = json.loads((ROOT/'configs/base_target_rmuc2026.json').read_text())
     source_hash = hashlib.sha256(scene.read_bytes()).hexdigest()
     if source_hash != cfg['source_scene_sha256']:
         raise ValueError('Source scene changed; review the extraction region and source hash first')

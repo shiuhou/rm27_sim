@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "source": "User 1018.param (PX4 v1.17.0, MicoAir743v2-AIO), sha256 2d46b0bac6719cbbafc918b6f2cdcd5e86e83b50b4b922d426b3fa77668609c4, supplied 2026-10-21. MC_AT_EN/APPLY=1: gains may come from autotune.",
+  "rate_p": [
+    0.15,
+    0.15,
+    0.2
+  ],
+  "rate_i": [
+    0.2,
+    0.2,
+    0.1
+  ],
+  "rate_d": [
+    0.003,
+    0.003,
+    0.0
+  ],
+  "rate_k": [
+    0.35,
+    0.4,
+    1.2
+  ],
+  "rate_ff": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "integrator_limit": [
+    0.3,
+    0.3,
+    0.3
+  ],
+  "rate_max_deg_s": [
+    220.0,
+    220.0,
+    360.0
+  ],
+  "clamp_rate_setpoint": false,
+  "gyro_cutoff_hz": 80.0,
+  "dgyro_cutoff_hz": 20.0,
+  "yaw_torque_cutoff_hz": 2.0,
+  "airmode": 0,
+  "rate_loop_hz": 1000.0,
+  "status": "Model of PX4 MulticopterRateControl + pseudo-inverse allocation with PX4 roll/pitch/yaw normalization and sequential desaturation (airmode off), from memory of the PX4 source, not line-verified against v1.17. Normalized motor output maps linearly to thrust (THR_MDL_FAC=0). Rate loop at 1 kHz versus about 666 Hz on the vehicle.",
+  "hover_throttle": 0.5105,
+  "hover_throttle_source": "2026_10_18_px4.ulg hover_thrust_estimate median while airborne (THR_MDL_FAC=0, linear): normalized motor output o gives o * (m g / 4) / hover_throttle newtons, capped by the plant rotor limit. With the Ver2 inertia this reproduces a roll rise time of about 0.13 s against MC_AT_RISE_TIME 0.14 s."
+}

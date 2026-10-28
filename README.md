@@ -51,6 +51,72 @@ MuJoCo 版本。舊 `rm27` 命令只是相容轉接，今後仿真程式請改�
 
 Pygame 是唯一飛行輸入視窗。MuJoCo Viewer 只負責顯示模擬與相機操作，沒有註冊 WASD、Q/E、R/F、T、L 等飛行 callback。Pygame 不會修改 MuJoCo state，也不會發送四個馬達推力。
 
+## 撞击恢复与动力学敏感度
+
+连续局部任务使用同一 Ver2 150 g 模型和 proxy 内环，实际飞完起飞、接近、底部球撞击、
+后退恢复、返回、着陆及停转；阶段之间不重置物理状态：
+
+```bash
+env -u PYTHONHOME -u PYTHONPATH OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  /home/shiuhou/venvs/mujoco/bin/python -m rm27_sim impact-mission \
+  --output artifacts/impact_recovery/my-mission --workers 8
+```
+
+默认软/硬接触各做 20 次名义重启及 50 个物理扰动种子，共 140 次。每次记录实际撞击
+速度、接触有效性、恢复时间、着陆与停转证据，以及可回放的姿态/电机轨迹；`passed`
+要求每种接触下名义 20/20、扰动至少 48/50 完成全部阶段。名义重复是确定性重启检查，
+不当作独立可靠性样本。该入口采用 truth 状态反馈和局部板面；带中央凹槽的起降试验台
+为容纳突出底球而增加的工程假设，未验证竞赛机库、完整场地、视觉导航或固件 SITL。
+任务数、工程门槛与假设均在 `configs/impact_recovery/mission.json` 中。
+自由飞行段启用已有的、由速度变化与已发电机命令驱动的推力比例估计，接触期间冻结估计；
+恢复段仍使用既有固定增益和沿板法向后退 0.3 m 的控制器。下降参考持续到实际触地，
+不能仅因接近预设高度就报告着陆。
+
+固定配置 `mission.json`、seed `20261025` 的本地验收结果：
+
+| 接触 | 名义重启 | 物理扰动 | 扰动成功率 Wilson 95% 区间 | 最长恢复时间 | 最大高度损失 |
+|---|---:|---:|---|---:|---:|
+| 软 | 20/20 | 50/50 | 92.86–100% | 1.732 s | 22.52 mm |
+| 硬 | 20/20 | 50/50 | 92.86–100% | 1.719 s | 0.072 mm |
+
+软硬两组使用相同的 50 个扰动种子；不能把它们合并为 100 个独立样本。
+初始停放姿态固定，不应用 scenario 的初始位置、速度与姿态扰动。
+先前开发批次每种接触仅 22/50 扰动任务完成，暴露起飞高度偏差、下降悬空及接近姿态
+跟踪问题；修正后使用新种子验收，未放宽门槛。该结果只适用于当前局部场景及工程假设。
+
+```bash
+# 理想末端撞击后的恢复；workers 只改变并行度，不改变样本、种子和输出顺序
+env -u PYTHONHOME -u PYTHONPATH OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  /home/shiuhou/venvs/mujoco/bin/python -m rm27_sim impact-recovery \
+  --config configs/impact_recovery/s1c_drone_v2_rmuc2027.json \
+  --output artifacts/impact_recovery/my-baseline --workers 8
+
+# 无碰撞悬停/三轴阶跃 → 单因子 → 偏航系数与惯量组合
+env -u PYTHONHOME -u PYTHONPATH OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  /home/shiuhou/venvs/mujoco/bin/python -m rm27_sim impact-dynamics \
+  --output artifacts/impact_recovery/my-dynamics --workers 8
+```
+
+默认扫描 14 个唯一动力学组合，包含推重比 2/2.5/3、惯量统一倍率
+0.75/1/1.25、偏航反扭系数 0.009/0.012/0.018/0.024 m。
+每组覆盖软/硬接触、proxy/近似 PX4 内环、六个速度/姿态单元各 100 次，
+共 33,600 次撞击；所有组使用同一组初始样本和随机扰动。
+
+`physical_values` 只改变物理惯量与执行器有效性，控制器仍使用名义惯量、混控、
+推力上限及 hover-throttle 映射。推重比扫描通过物理 gear 增益作用于实际推力；
+输出同时记录归一化命令的牛顿映射、物理推力上限和实际可达推重比。
+近似 PX4 受既有归一化输出映射限制，不能直接把配置推重比当作可达推重比。
+
+结果包含逐次试验、Wilson 95% 区间、相对名义值及软硬接触间的配对差异与配对 bootstrap
+区间、失败分类、恢复时间、高度损失和饱和时间；`free_flight.json` 保留无碰撞检查。
+总表 `passed: true` 表示整批运行完成，不代表每个条件均恢复成功。
+输入配置内容、资产哈希、代码哈希与版本均保存在结果中。
+
+检测和接触统计读取 `mj_step` 实际积分的区间求解，之后才调用 `mj_forward`
+更新端点姿态；测量在区间结束时交付。旧版先刷新端点再采样的报告属于历史证据，
+其重仿真可能与当前代码不同。底部球、接触和动力参数仍是工程假设，状态反馈使用
+MuJoCo truth；这些实验不构成固件 SITL 或真机性能验证。
+
 ## 共用 Physics 套件與工作位置
 
 `packages/physics/` 是獨立的 `rm27-contact-physics` Python 套件，接受呼叫者提供的

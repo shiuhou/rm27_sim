@@ -1,39 +1,41 @@
 {
-  "field_path": "rm27/simulation/field/rmuc2026_battlefield_mjcf/model.xml",
-  "field_sha256": "b363ffd0c37dea3e6a78ee4881789d8a25896b67a301d5a8614d38a060b02811",
+  "field_path": "components/rm_mjcf/rmuc2027_battlefield_mjcf/model.xml",
+  "field_sha256": "69ba5fc8ebb4580ea7c2b73acc62ab882c90594c3d38945b327e63e34a1e864b",
   "friendly_team": "red",
   "target_team": "blue",
-  "selection": "negative-X blue base, mirrored from the previously inspected positive-X red-base candidate",
-  "surface_evidence": "User confirmed the positive-X target was the friendly red base. The negative-X pose is its 180-degree field-symmetry counterpart about (-0.02,0.02); final official RM2027 geometry remains pending.",
+  "selection": "positive-X blue base of the RMUC2027 V1 field (blue-coloured base parts visual_118; the red base is at negative X). Armor = the plate directly below the green guidance lamp, facing the field centre; confirmed by the user 2026-10-21.",
+  "surface_evidence": "Measured from mesh visual_117 (light-grey plate set, three plates at 120 deg): the field-facing plate's vertices give a 2.5 mm thick plate whose outward (top) surface centre is (11.4561, 0.0003, 1.0790) m with outward normal (-0.4617, 0, 0.887), i.e. 27.5 deg from vertical, and in-plane extents 0.129 m across (world Y) by 0.114 m along the slope. Mesh face winding points inward, so the outward sign is taken toward +Z. Green lamp visual_116: centre (11.4944, 0, 1.2424), 57 x 55 mm, dome mean normal (-0.968, 0, 0.25). A dark frame (visual_115) surrounds the plate edges.",
   "armor_surface_center_m": [
-    -11.468,
-    0.02,
-    1.0758
+    11.4561,
+    0.0,
+    1.079
   ],
   "armor_normal": [
-    0.4617,
-    0,
+    -0.4617,
+    0.0,
     0.887
   ],
   "armor_dimensions_m": [
-    0.09,
-    0.055,
-    0.006
+    0.129,
+    0.114,
+    0.0025
   ],
   "marker_center_m": [
-    -11.515,
-    0.02,
-    1.17
+    11.4944,
+    0.0,
+    1.2424
   ],
   "marker_normal": [
-    1,
-    0,
-    0
+    -0.968,
+    0.0,
+    0.25
   ],
-  "marker_radius_m": 0.0275,
+  "marker_radius_m": 0.0285,
   "marker_wavelength_nm": 520,
   "marker_luminous_intensity_cd_approx": 10,
-  "marker_source": "RMUC 2026 rulebook V2.2.0 dart guidance lamp specification",
+  "marker_source": "RMUC2027 V1 field mesh visual_116 (green lamp geometry); rulebook optical specification still from RMUC 2026 V2.2.0",
   "marker_illumination_state_modelled": false,
-  "provenance": "Team assignment follows the user's 2026-09-12 correction. Armor footprint is a bounded test patch, not full measured armor dimensions. Marker diameter and optical specifications come from the RMUC 2026 rulebook; its mirrored world pose remains provisional. No real-hardware camera calibration."
+  "provenance": "Remeasured 2026-10-21 from the RMUC2027 V1 MuJoCo field (official CAD export, shiuhou/scene a4f31da) by vertex/face analysis; previous RMUC2026 mirrored estimate kept in configs/base_target_rmuc2026.json. Visual meshes are decimated (ratio 0.2), so expect millimetre-level error. No real-field survey; field collision proxies are AABBs and do not include this plate.",
+  "field_repository_commit": "rm_mjcf e3bc68a7e9e7c2191595ae2486cc20d639dc80e2",
+  "armor_dimensions_note": "[across (horizontal, world Y), along slope, measured thickness]; collision proxies may use a thicker box behind the surface."
 }

@@ -168,6 +168,30 @@ def main():
     p.add_argument('--view', action='store_true')
     p.add_argument('--speedup', type=float)
     p.add_argument('--dynamics', type=Path)
+    p = sub.add_parser('impact-recovery', help='Monte Carlo of ideal bottom impacts and post-impact recovery')
+    p.add_argument('--config', type=Path, default=ROOT/'configs/impact_recovery/s1_immediate_stabilization.json')
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--workers', type=int, default=1)
+    p = sub.add_parser('impact-dynamics', help='Paired physical dynamics sensitivity and free-flight checks')
+    p.add_argument('--config', type=Path, default=ROOT/'configs/impact_recovery/dynamics_sensitivity.json')
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--workers', type=int, default=1)
+    p = sub.add_parser('impact-view', help='Replay one impact-recovery trial in the MuJoCo viewer (or --video mp4)')
+    p.add_argument('trials', type=Path, help='trials.jsonl of an impact-recovery output directory')
+    p.add_argument('--condition', help='default: the first condition of the run')
+    p.add_argument('--index', type=int, help='exact line in trials.jsonl (overrides the filters)')
+    p.add_argument('--outcome', default='RECOVERED', help="'any' for no outcome filter")
+    p.add_argument('--attitude', choices=['normal', 'level'])
+    p.add_argument('--speed', type=float, help='grid normal speed, e.g. 3.0')
+    p.add_argument('--slow', type=float, default=4.0, help='slow-motion factor')
+    p.add_argument('--video', type=Path, help='render an mp4 headlessly instead of opening the viewer')
+    p.add_argument('--stream', action='store_true', help='serve an off-screen (MUJOCO_GL=egl) MJPEG stream over HTTP')
+    p.add_argument('--host', default='127.0.0.1')
+    p.add_argument('--port', type=int, default=8765)
+    p = sub.add_parser('impact-mission', help='Continuous local Ver2 proxy takeoff, impact, recovery, return and landing')
+    p.add_argument('--config', type=Path, default=ROOT/'configs/impact_recovery/mission.json')
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--workers', type=int, default=1)
     args = parser.parse_args()
     if args.command == 'configure-assets':
         from .paths import configure
@@ -202,6 +226,32 @@ def main():
         return run(args.scene, args.output, args.instance,
                    route=RouteExperiment(args.scene, args.audit, args.mission), view=args.view,
                    speedup=args.speedup, dynamics=args.dynamics)
+    elif args.command == 'impact-recovery':
+        from .experiments.impact_recovery import run as run_impact_recovery
+        summary = run_impact_recovery(args.config, args.output, workers=args.workers)
+        print(json.dumps({name: {k: v[k] for k in ('trials', 'recovery_rate', 'recovery_rate_wilson95', 'outcomes')}
+                          for name, v in summary['overall'].items()}, indent=2))
+    elif args.command == 'impact-dynamics':
+        from .experiments.dynamics_sensitivity import run as run_dynamics
+        summary = run_dynamics(args.config, args.output, workers=args.workers)
+        print(json.dumps({'passed': summary['passed'], 'impact_trials': summary['impact_trials']}))
+    elif args.command == 'impact-mission':
+        from .experiments.impact_mission import run as run_mission
+        summary = run_mission(args.config, args.output, workers=args.workers)
+        print(json.dumps(summary, indent=2))
+        return 0 if summary['passed'] else 1
+    elif args.command == 'impact-view':
+        from .experiments import impact_view
+        row = impact_view.pick_row(args.trials, args.condition, args.index,
+                                   None if args.outcome == 'any' else args.outcome, args.attitude, args.speed)
+        print(json.dumps({k: row[k] for k in ('condition', 'cell', 'repeat', 'outcome', 'recovery_time_s', 'case')}))
+        if args.stream:
+            impact_view.stream(args.trials, row, host=args.host, port=args.port, slow=args.slow)
+        elif args.video:
+            impact_view.render(args.trials, row, args.video, slow=args.slow)
+            print(f"wrote {args.video}")
+        else:
+            impact_view.view(args.trials, row, slow=args.slow)
     else:
         import mujoco.viewer
 

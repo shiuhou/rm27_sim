@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "study": "Independent-seed recovery boundary validation, nominal soft contact",
+  "experiment_config": "configs/impact_recovery/contact_base_v2.json",
+  "vehicle_config": "configs/drone_v2.json",
+  "dynamics_profile": "configs/impact_recovery/dynamics_v2_150g.json",
+  "target_geometry": "configs/base_target.json",
+  "rate_params": "configs/impact_recovery/px4_rate_1018.json",
+  "vehicle_mjcf": "components/rm_mjcf/rm27_drone_mjcf/dynamic/model.xml",
+  "seed": 20261023,
+  "physical_scale": 1.0,
+  "trials_per_cell": 100,
+  "sampling": {
+    "normal_speed_m_s": [1.5, 3.0],
+    "tangent_speed_m_s": [0.0, 0.5],
+    "tilt_deg": [0.0, 15.0],
+    "omega_norm_rad_s": [0.0, 3.0],
+    "tangent_offset_m": [0.0, 0.04],
+    "yaw_deg": [0.0, 0.0]
+  },
+  "fixed": {"gap_m": 0.02},
+  "grid": {"attitude_mode": ["normal", "level"], "normal_speed_m_s": [1.5, 2.25, 3.0]},
+  "conditions": {
+    "proxy": {"mode": "stabilize", "inner_loop": "proxy", "setpoint_backoff_m": 0.3},
+    "px4_approx": {"mode": "stabilize", "inner_loop": "px4", "setpoint_backoff_m": 0.3}
+  },
+  "success": {"max_body_rate_rad_s": 1.0, "max_tilt_deg": 10.0, "max_vertical_speed_m_s": 0.3, "hold_s": 0.3},
+  "uncertainty_overrides": {"friction_range": [0.5, 0.5], "contact_damping_range": [1.0, 1.0], "contact_time_scale_range": [1.0, 1.0]},
+  "target_overrides": {"solref_s": 0.012, "solref_damping_ratio": 1.0, "friction": 0.5},
+  "status": "Independent seed from the 20261021 baseline. Same six cells, 100 trials per cell, and paired initial states/physical draws for proxy and approximate PX4. Ver2 150 g, assumed bottom ball, truth state feedback. Engineering validation only; approximate PX4 is not firmware SITL and physics/contact remain uncalibrated."
+}
