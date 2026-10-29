@@ -5,6 +5,30 @@
 SITL 橋接和回放；`packages/physics/` 提供共用 Physics；RL 訓練留在獨立 `rm27_RL`。
 以下既有 Pygame/M0–M3 baseline 仍保留，與新的任務 CLI 是不同入口。
 
+## 版本、入口與驗證範圍
+
+本 repo 的 GitHub 名稱是 `shiuhou/rm27_sim`；整合工作區仍使用
+`components/rm_uav_mujoco/` 作本地資料夾名稱。獨立下載不需要父倉庫：
+
+```bash
+git clone --branch main https://github.com/shiuhou/rm27_sim.git
+cd rm27_sim
+```
+
+請在已安裝本版本依賴的獨立 Python 環境中執行下列命令。新機器仍需另外取得並
+登記所需資產；clone 不包含本地 `.local/assets.json`、CAD、錄製或飛控二進位。
+
+| 入口 | 提供什麼 | 結果不能代替什麼 |
+|---|---|---|
+| Pygame + M0–M3 | 既有通用機體、控制／估計與任務 benchmark | Ver2 完整場地任務或真機資格 |
+| `python -m rm27_sim` | 場景、任務、ArduPilot SITL、viewer／回放 | PX4 或真實 VIO 已整合的證據 |
+| `packages/physics/` | RL 和研究可消費的共用物理套件 | RL 的 reward、訓練或 policy 本身 |
+
+README 的命令以本分支實作為準。可動基地與 impact 的後續工作另見
+[PR #2](https://github.com/shiuhou/rm27_sim/pull/2) 和
+[PR #3](https://github.com/shiuhou/rm27_sim/pull/3)；本地研究分支／未提交結果
+不會自動出現在 main。不要用局部試驗台成功推論新完整場地的接觸、恢復、返航與落庫。
+
 ## 從這裡開始
 
 ```bash
@@ -89,7 +113,7 @@ SITL 整合由本 repo 的 `rm27_sim/` 負責。既有 M0–M3 執行入口保�
 大量第三方 vendored 套件；GitHub 單檔 100 MB 上限。這些 SITL/Gazebo
 產物日後適合獨立成一個 `rm_uav_sitl` repo。
 
-## Milestone 進程（M0–M3 已驗證）
+## 歷史通用機體 Milestone（M0–M3）
 
 | Milestone | 內容 | 驗證 |
 |---|---|---|
@@ -98,11 +122,11 @@ SITL 整合由本 repo 的 `rm27_sim/` 負責。既有 M0–M3 執行入口保�
 | M2 | 自主任務：起飛 → 前進 5 m（相對起飛航向）→ 煞車 → 懸停 → 降落；**mission 只看 measured state，ground truth 只用於評分** | `m2_benchmark.py` PASS（12 cases） |
 | M3 | GPS-denied 定位：IMU（250 Hz）+ optical-flow-like 速度（50 Hz）+ ToF 高度（50 Hz）→ complementary predict/correct estimator → EstimatedState 驅動 mission 與 controller；truth 結構性隔離 | `m3_benchmark.py` PASS（11 cases） |
 
-驗證狀態：`python -m pytest -q` → **134 passed**；上述四個 benchmark
+該歷史版本的驗證紀錄：`python -m pytest -q` → **134 passed**；上述四個 benchmark
 全部 PASS。Git 歷史即里程碑封存：M0 `5631a1f` → M1 `ad152a7` →
 M2 `7789a81` → M3 `2be0029`。
 
-下一步（M4-A）：把 1 kg 通用機換成 RM27 方向的 150–200 g / 120 mm
+該歷史 M0–M3 路線的後續提案（M4-A，不代表全 repo 最新進度）：把 1 kg 通用機換成 RM27 方向的 150–200 g / 120 mm
 wheelbase 微型機 plant（質量/幾何/慣量/推力餘裕縮放），autonomy stack
 維持不變。注意：1103 9500 KV + 2"/2.5" + 2S/3S 的推力/電流/轉速
 **尚未經實測驗證**，M4-A 只用明確標註的工程估計值。
