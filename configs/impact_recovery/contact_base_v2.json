@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "provenance": "Copy of rm27_RL configs/aggressive_contact.json with the target and contact sections replaced for the Ver2 aircraft and the RMUC2027 blue armor (2026-10-21).",
+  "vehicle_config": "configs/drone_v2.json",
+  "target_config": "configs/base_target.json",
+  "physics_dt_s": 0.001,
+  "control_dt_s": 0.005,
+  "horizon_s": 6.0,
+  "target": {
+    "center_m": [
+      0.0,
+      0.0,
+      1.079
+    ],
+    "normal": [
+      -0.4617,
+      0.0,
+      0.887
+    ],
+    "dimensions_m": [
+      0.114,
+      0.129,
+      0.006
+    ],
+    "source": "configs/base_target.json (RMUC2027 V1 field, blue base plate below the green lamp, measured 2026-10-21); translated local patch at the measured height with the measured normal and footprint [along slope, across]; 6 mm collision thickness behind the surface (measured plate 2.5 mm); flat surrounding rim is an ASSUMPTION, the real frame, lamp housing and base structure are not modelled",
+    "rim_outer_halfsize_m": [
+      0.22,
+      0.16
+    ],
+    "friction": 0.5,
+    "solref_s": 0.012,
+    "solref_damping_ratio": 1.0
+  },
+  "contact": {
+    "offset_body_m": [
+      0.0,
+      0.0,
+      -0.0445
+    ],
+    "radius_m": 0.009,
+    "bumper": true,
+    "bottom_geoms": [
+      "bumper"
+    ],
+    "status": "User 2026-10-21: the intended contact is a small ball/box at the bottom centre that is missing from the Ver2 MJCF. ASSUMPTION: a 9 mm sphere (as the previous bumper) whose lowest point protrudes 31 mm below the support feet (feet at -22.5 mm, sphere bottom at -53.5 mm), i.e. the same protrusion as the previous bumper below its guard. Mass is inside the 150 g total. Ver2 CAD proxies keep their own friction 0.6 / solref 0.004."
+  },
+  "start_offset_m": [
+    0.85,
+    0.0,
+    0.3
+  ],
+  "controller": {
+    "look_at_marker": true,
+    "position_kp": [
+      16.0,
+      16.0,
+      20.0
+    ],
+    "position_kd": [
+      7.0,
+      7.0,
+      8.0
+    ],
+    "attitude_frequency_rad_s": 10.0,
+    "attitude_damping": 0.85
+  },
+  "nominal_skill": {
+    "duration_s": 1.4,
+    "normal_speed_m_s": 0.65,
+    "terminal_specific_thrust_m_s2": 11.0,
+    "tangent_speed_m_s": 0.0,
+    "penetration_m": 0.008,
+    "retreat_m": 0.28,
+    "recovery_lift_m": 0.08
+  },
+  "gates": {
+    "edge_margin_m": 0.002,
+    "separation_m": 0.08,
+    "secondary_contact_gap_s": 0.03,
+    "max_contact_tangent_speed_m_s": 0.8,
+    "contact_normal_speed_range_m_s": [
+      0.2,
+      1.5
+    ],
+    "max_contact_attitude_error_deg": 20.0,
+    "max_body_rate_rad_s": 20.0,
+    "max_recovery_tilt_deg": 10.0,
+    "max_recovery_rate_rad_s": 0.5235987756,
+    "max_recovery_speed_m_s": 0.3,
+    "max_altitude_loss_m": 0.3,
+    "recovery_deadline_s": 2.0,
+    "recovery_hold_s": 1.0,
+    "max_saturation_run_s": 0.4,
+    "recovery_volume_min_m": [
+      -0.6,
+      -0.5,
+      0.5
+    ],
+    "recovery_volume_max_m": [
+      1.4,
+      0.5,
+      2.1
+    ],
+    "status": "NOMINAL experiment gates, partly inherited from S2; this isolated motor-control experiment cannot pass S2."
+  },
+  "uncertainty": {
+    "start_position_std_m": 0.01,
+    "start_velocity_std_m_s": 0.025,
+    "start_attitude_std_deg": 2.0,
+    "target_position_std_m": 0.003,
+    "target_angle_std_deg": 1.5,
+    "thrust_scale_range": [
+      0.94,
+      1.06
+    ],
+    "mass_scale_range": [
+      0.97,
+      1.03
+    ],
+    "motor_tau_scale_range": [
+      0.85,
+      1.15
+    ],
+    "friction_range": [
+      0.3,
+      0.7
+    ],
+    "contact_time_scale_range": [
+      0.8,
+      1.2
+    ],
+    "contact_damping_range": [
+      0.85,
+      1.15
+    ],
+    "contact_offset_std_m": 0.001,
+    "target_latency_s": 0.0,
+    "status": "ASSUMED small uncertainty; not a measured real-world distribution."
+  },
+  "search": {
+    "seed": 92301,
+    "training_seeds": [
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108
+    ],
+    "evaluation_seed_start": 192000,
+    "bounds": {
+      "duration_s": [
+        1.05,
+        1.85
+      ],
+      "normal_speed_m_s": [
+        0.25,
+        1.4
+      ],
+      "terminal_specific_thrust_m_s2": [
+        8.0,
+        16.0
+      ],
+      "tangent_speed_m_s": [
+        -0.3,
+        0.3
+      ],
+      "penetration_m": [
+        0.002,
+        0.025
+      ]
+    }
+  }
+}

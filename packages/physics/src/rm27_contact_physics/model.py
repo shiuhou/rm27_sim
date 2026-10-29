@@ -15,7 +15,7 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from rm27_contact_physics.drone import add as add_drone
+from rm27_contact_physics.drone import add as add_drone, import_mjcf
 
 
 def unit(v):
@@ -164,6 +164,27 @@ def build_model(cfg, nominal_cfg, *, vehicle_config):
     world = ET.SubElement(root, "worldbody")
     ET.SubElement(world, "light", pos="0 0 4", dir="0 0 -1")
     ET.SubElement(world, "geom", name="ground", type="plane", size="4 4 .05", rgba=".18 .2 .23 1")
+    if "landing_pad" in cfg:
+        # Optional local test fixture: the central recess clears the assumed
+        # protruding bumper while the CAD feet rest on the surrounding surface.
+        # This is not the competition dock. Absent configuration preserves the
+        # existing contact/RL scene byte for byte.
+        pad = cfg["landing_pad"]
+        cx, cy = pad["center_xy_m"]
+        half, hole = pad["half_size_m"], pad["recess_half_size_m"]
+        height, depth = pad["height_m"], pad["recess_depth_m"]
+        if not np.isfinite([cx, cy, half, hole, height, depth]).all() or not (0 < hole < half and 0 < depth < height):
+            raise ValueError("Invalid landing pad dimensions")
+        pieces = [("floor", [cx, cy, (height-depth)/2], [half, half, (height-depth)/2])]
+        for sign in (-1, 1):
+            pieces.append((f"x_{sign}", [cx+sign*(half+hole)/2, cy, height/2],
+                           [(half-hole)/2, half, height/2]))
+            pieces.append((f"y_{sign}", [cx, cy+sign*(half+hole)/2, height/2],
+                           [hole, (half-hole)/2, height/2]))
+        for name, position, size in pieces:
+            ET.SubElement(world, "geom", name="landing_pad_"+name, type="box",
+                          pos=" ".join(map(str, position)), size=" ".join(map(str, size)),
+                          friction="0.6 .005 .0001", solref=".004 1", rgba=".25 .55 .3 1")
     R = target_frame(t)
     xyzw = Rotation.from_matrix(R).as_quat()
     plate = ET.SubElement(world, "body", name="target", pos=" ".join(map(str, t["center_m"])),
@@ -180,13 +201,16 @@ def build_model(cfg, nominal_cfg, *, vehicle_config):
     vcfg = copy.deepcopy(vehicle_config)
     # Preserve nominal actuator/inertia reference; uncertain physics is hidden from controller.
     initial = np.array(nominal_cfg["target"]["center_m"]) + nominal_cfg["start_offset_m"]
-    info = add_drone(root, "uav", initial, [1, 0, 0, 0], vcfg)
+    # A vehicle config with ``mjcf_path`` imports the runtime aircraft MJCF instead of the generated proxy.
+    info = (import_mjcf(root, "uav", initial, vcfg) if "mjcf_path" in vcfg
+            else add_drone(root, "uav", initial, [1, 0, 0, 0], vcfg))
     info["rotor_arm_m"] = vcfg["rotor_center_offset_m"]
     info["yaw_torque_per_thrust_m"] = vcfg.get("dynamics_override", {}).get(
         "yaw_torque_per_thrust_m", vcfg["engineering_estimates"]["yaw_torque_per_thrust_m"])
     body = world.find("body[@name='uav']")
-    ET.SubElement(body, "geom", name="bumper", type="sphere", size=str(cfg["contact"]["radius_m"]),
-                  pos=" ".join(map(str, cfg["contact"]["offset_body_m"])), rgba=".1 .9 .3 1")
+    if cfg["contact"].get("bumper", True):
+        ET.SubElement(body, "geom", name="bumper", type="sphere", size=str(cfg["contact"]["radius_m"]),
+                      pos=" ".join(map(str, cfg["contact"]["offset_body_m"])), rgba=".1 .9 .3 1")
     xml = ET.tostring(root, encoding="unicode")
     model = mujoco.MjModel.from_xml_string(xml)
     uid = model.body("uav").id

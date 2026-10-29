@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "engineering_estimate",
+  "frame": "body axes; principal inertia; COM at model origin",
+  "evidence": [],
+  "values": {
+    "mass_kg": 0.15,
+    "inertia_kg_m2": [
+      0.0001877625,
+      0.0001877625,
+      0.0003249
+    ],
+    "max_rotor_thrust_N": 1.103625,
+    "motor_time_constant_s": 0.04,
+    "yaw_torque_per_thrust_m": 0.018
+  },
+  "limitations": "Ver2 runtime MJCF values (rm_mjcf/rm27_drone_mjcf/model_info.json): 150 g user-reported; inertia is a uniform 114 x 114 x 45 mm envelope box, not a CAD density calculation; thrust, motor lag and yaw torque are engineering estimates. 1018.param CA_ROTOR positions are +/-0.05 m, the MJCF rotors +/-0.0275 m: unresolved.",
+  "mass_evidence": "User reported 150 g ready-to-fly including battery, 2026-10-13"
+}

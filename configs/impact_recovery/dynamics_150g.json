@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "engineering_estimate",
+  "frame": "body axes; principal inertia; COM at model origin",
+  "evidence": [],
+  "values": {
+    "mass_kg": 0.15,
+    "inertia_kg_m2": [
+      4.158333333333333e-05,
+      4.846666666666666e-05,
+      8.218333333333333e-05
+    ],
+    "max_rotor_thrust_N": 1.103625,
+    "motor_time_constant_s": 0.04,
+    "yaw_torque_per_thrust_m": 0.018
+  },
+  "limitations": "Only total mass is user confirmed. Inertia uses a 40x30x20 mm central box and four 8 g motor point masses at provisional +/-30 mm offsets. Maximum thrust, motor lag and yaw torque retained from historical estimates; not calibrated for 2S. No real-flight gains.",
+  "mass_evidence": "User confirmed 150 g including 2S 450 mAh battery, M3C, camera and wiring; 2026-10-11"
+}

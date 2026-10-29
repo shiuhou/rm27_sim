@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "study": "S3 baseline",
+  "experiment_config": "configs/impact_recovery/contact_base_v2.json",
+  "vehicle_config": "configs/drone_v2.json",
+  "dynamics_profile": "configs/impact_recovery/dynamics_v2_150g.json",
+  "target_geometry": "configs/base_target.json",
+  "seed": 20261021,
+  "physical_scale": 1.0,
+  "trials_per_cell": 100,
+  "sampling": {
+    "normal_speed_m_s": [
+      1.5,
+      3.0
+    ],
+    "tangent_speed_m_s": [
+      0.0,
+      0.5
+    ],
+    "tilt_deg": [
+      0.0,
+      15.0
+    ],
+    "omega_norm_rad_s": [
+      0.0,
+      3.0
+    ],
+    "tangent_offset_m": [
+      0.0,
+      0.04
+    ],
+    "yaw_deg": [
+      0.0,
+      0.0
+    ]
+  },
+  "fixed": {
+    "gap_m": 0.02
+  },
+  "grid": {
+    "attitude_mode": [
+      "normal",
+      "level"
+    ],
+    "normal_speed_m_s": [
+      1.5,
+      2.25,
+      3.0
+    ]
+  },
+  "conditions": {
+    "R_fixed_0.3": {
+      "mode": "stabilize"
+    },
+    "F_fixed_0": {
+      "mode": "stabilize",
+      "setpoint_backoff_m": 0.0
+    },
+    "P_patnaik_0.1": {
+      "mode": "stabilize",
+      "setpoint_rule": "patnaik",
+      "backoff_gain": 0.1
+    },
+    "G_rebound_0.4": {
+      "mode": "stabilize",
+      "setpoint_rule": "rebound",
+      "backoff_gain": 0.4
+    }
+  },
+  "success": {
+    "max_body_rate_rad_s": 1.0,
+    "max_tilt_deg": 10.0,
+    "max_vertical_speed_m_s": 0.3,
+    "hold_s": 0.3
+  },
+  "status": "S3 single-factor sweep on the S1c setup (Ver2 + bottom ball, RMUC2027 armor, proxy loop, truth detection, 1 ms). Armor friction, damping ratio and time constant are FIXED at the stated values (no random draw); mass/thrust/motor-lag/offset draws and pre-impact cases repeat across all S3 runs (same seed). Bumper-armor contact uses the armor values directly; CAD proxies mix them with their own friction 0.6 / solref 4 ms.",
+  "rate_params": "configs/impact_recovery/px4_rate_1018.json",
+  "vehicle_mjcf": "components/rm_mjcf/rm27_drone_mjcf/dynamic/model.xml",
+  "uncertainty_overrides": {
+    "friction_range": [
+      0.5,
+      0.5
+    ],
+    "contact_damping_range": [
+      1.0,
+      1.0
+    ],
+    "contact_time_scale_range": [
+      1.0,
+      1.0
+    ]
+  },
+  "target_overrides": {
+    "solref_s": 0.012,
+    "solref_damping_ratio": 1.0,
+    "friction": 0.5
+  }
+}

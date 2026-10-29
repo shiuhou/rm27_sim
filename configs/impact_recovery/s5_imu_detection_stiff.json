@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "study": "S5 stiff-contact variant: armor contact time constant 2 ms instead of 12 ms (shorter, sharper impact pulse)",
+  "experiment_config": "configs/impact_recovery/contact_base_v2.json",
+  "vehicle_config": "configs/drone_v2.json",
+  "dynamics_profile": "configs/impact_recovery/dynamics_v2_150g.json",
+  "target_geometry": "configs/base_target.json",
+  "seed": 20261021,
+  "physical_scale": 1.0,
+  "trials_per_cell": 100,
+  "sampling": {
+    "normal_speed_m_s": [
+      1.5,
+      3.0
+    ],
+    "tangent_speed_m_s": [
+      0.0,
+      0.5
+    ],
+    "tilt_deg": [
+      0.0,
+      15.0
+    ],
+    "omega_norm_rad_s": [
+      0.0,
+      3.0
+    ],
+    "tangent_offset_m": [
+      0.0,
+      0.04
+    ],
+    "yaw_deg": [
+      0.0,
+      0.0
+    ]
+  },
+  "fixed": {
+    "gap_m": 0.02
+  },
+  "grid": {
+    "attitude_mode": [
+      "normal",
+      "level"
+    ],
+    "normal_speed_m_s": [
+      1.5,
+      2.25,
+      3.0
+    ]
+  },
+  "conditions": {
+    "R_truth": {
+      "mode": "stabilize"
+    },
+    "R_imu_filtered": {
+      "mode": "stabilize",
+      "detection_source": "imu_filtered"
+    },
+    "R_imu_raw": {
+      "mode": "stabilize",
+      "detection_source": "imu_raw"
+    },
+    "R_imu_raw_3g_x2": {
+      "mode": "stabilize",
+      "detection_source": "imu_raw",
+      "detection_threshold_g": 3.0,
+      "detection_persistence": 2
+    }
+  },
+  "success": {
+    "max_body_rate_rad_s": 1.0,
+    "max_tilt_deg": 10.0,
+    "max_vertical_speed_m_s": 0.3,
+    "hold_s": 0.3
+  },
+  "status": "Same seed, ranges and grid as S1/S1c/S2 (cases and physical draws repeat; physics at 0.5 ms for 1.6/2 kHz IMU sampling, converged per dt_convergence.py). R = fixed 0.3 m backoff (S2 best). Sensor noise is paired across conditions (imu_seed = physical seed). Stiff variant: target solref 2 ms (scenario still scales it by 0.8-1.2); bumper-armor contact uses it directly, CAD proxies mix it with their own 4 ms.",
+  "rate_params": "configs/impact_recovery/px4_rate_1018.json",
+  "vehicle_mjcf": "components/rm_mjcf/rm27_drone_mjcf/dynamic/model.xml",
+  "physics_dt_s": 0.0005,
+  "imu_params": "configs/impact_recovery/imu_bmi088_px4.json",
+  "target_overrides": {
+    "solref_s": 0.002
+  }
+}

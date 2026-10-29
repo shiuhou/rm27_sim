@@ -49,13 +49,18 @@ def with_profile(config, path):
     return result
 
 
-def verify_compiled(model, body, motors, profile):
-    """Reject a profile/scene mismatch instead of silently testing other dynamics."""
+def verify_compiled(model, body, motors, profile, draw=None):
+    """Reject a profile/scene mismatch instead of silently testing other dynamics.
+
+    ``draw`` is a scenario draw whose mass/thrust/motor-lag scales the scene applied on purpose.
+    """
     values = profile['values']
-    checks = [(model.body_mass[body], values['mass_kg']),
-              (model.body_inertia[body], values['inertia_kg_m2']),
+    d = draw or {}
+    mass, thrust, tau = (d.get(k, 1.) for k in ('mass_scale', 'thrust_scale', 'motor_tau_scale'))
+    checks = [(model.body_mass[body], values['mass_kg']*mass),
+              (model.body_inertia[body], np.asarray(values['inertia_kg_m2'])*mass),
               (model.actuator_ctrlrange[motors, 1], values['max_rotor_thrust_N']),
-              (model.actuator_dynprm[motors, 0], values['motor_time_constant_s']),
-              (model.actuator_gear[motors, 5], np.array([1, -1, 1, -1])*values['yaw_torque_per_thrust_m'])]
+              (model.actuator_dynprm[motors, 0], values['motor_time_constant_s']*tau),
+              (model.actuator_gear[motors, 5], np.array([1, -1, 1, -1])*values['yaw_torque_per_thrust_m']*thrust)]
     if not all(np.allclose(actual, expected, rtol=1e-12, atol=1e-15) for actual, expected in checks):
         raise ValueError('Scene dynamics differ from the selected calibration profile')

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "accel": {
+    "odr_hz": 1600.0,
+    "range_g": 24.0,
+    "internal_cutoff_hz": 280.0,
+    "noise_density_ug_rthz": 175.0,
+    "noise_bandwidth_hz": 280.0,
+    "vibration_std_m_s2": 2.5
+  },
+  "gyro": {
+    "odr_hz": 2000.0,
+    "range_dps": 2000.0,
+    "internal_cutoff_hz": 532.0,
+    "noise_density_dps_rthz": 0.014,
+    "noise_bandwidth_hz": 532.0
+  },
+  "px4_accel_cutoff_hz": 30.0,
+  "px4_gyro_cutoff_hz": 80.0,
+  "provenance": {
+    "measured": "2026_10_18_px4.ulg: BMI088 accel raw rate 1610 Hz, gyro raw 1997 Hz; 1018.param IMU_ACCEL_CUTOFF 30, IMU_GYRO_CUTOFF 80 (user: never tuned). Accel clipping already occurs in normal flight.",
+    "assumed": "Full scale +/-24 g and +/-2000 dps (PX4 BMI088 driver settings, not verified against v1.17 source); internal low-pass as a 2nd-order Butterworth at the BMI088 normal-mode bandwidth for that ODR (accel ~280 Hz, gyro 532 Hz); noise densities from the BMI088 datasheet (typical).",
+    "vibration": "White vibration std 2.5 m/s^2 per axis at 1600 Hz, chosen so a 5 ms average matches the ~0.9 m/s^2 f_z std of sensor_combined in flight (upper bound: that std also contains manoeuvres). Spikes large enough to clip are NOT modelled; false alarms are judged from the ULog instead."
+  }
+}

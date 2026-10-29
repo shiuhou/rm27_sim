@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "study": "S1 immediate stabilization after an ideal terminal bottom impact",
+  "experiment_config": "configs/impact_recovery/contact_base.json",
+  "vehicle_config": "configs/drone.json",
+  "dynamics_profile": "configs/impact_recovery/dynamics_150g.json",
+  "target_geometry": "configs/base_target.json",
+  "seed": 20261021,
+  "physical_scale": 1.0,
+  "trials_per_cell": 100,
+  "sampling": {
+    "normal_speed_m_s": [1.5, 3.0],
+    "tangent_speed_m_s": [0.0, 0.5],
+    "tilt_deg": [0.0, 15.0],
+    "omega_norm_rad_s": [0.0, 3.0],
+    "tangent_offset_m": [0.0, 0.04],
+    "yaw_deg": [0.0, 0.0]
+  },
+  "fixed": {"gap_m": 0.02},
+  "grid": {
+    "attitude_mode": ["normal", "level"],
+    "normal_speed_m_s": [1.5, 2.25, 3.0]
+  },
+  "conditions": {
+    "A0_no_recovery": {"mode": "none"},
+    "A1_immediate": {"mode": "stabilize"},
+    "A2_delay_50ms": {"mode": "stabilize", "takeover_delay_s": 0.05}
+  },
+  "success": {
+    "max_body_rate_rad_s": 1.0,
+    "max_tilt_deg": 10.0,
+    "max_vertical_speed_m_s": 0.3,
+    "hold_s": 0.3
+  },
+  "status": "Ranges follow the I4 moderate terminal set (user decision 2026-10-19) as an ideal pre-impact distribution; success = self-sustained hover (user 2026-10-21). Truth state feedback and truth 1 g detection; IMU realism is study S5."
+}

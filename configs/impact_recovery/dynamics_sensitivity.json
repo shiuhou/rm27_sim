@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "base_study": "configs/impact_recovery/s3/baseline.json",
+  "scan": {
+    "thrust_to_weight": [2.0, 2.5, 3.0],
+    "inertia_scale": [0.75, 1.0, 1.25],
+    "yaw_torque_per_thrust_m": [0.009, 0.012, 0.018, 0.024]
+  },
+  "nominal": {"thrust_to_weight": 3.0, "inertia_scale": 1.0, "yaw_torque_per_thrust_m": 0.018},
+  "contacts": {
+    "soft": {"solref_s": 0.012, "solref_damping_ratio": 1.0, "friction": 0.5},
+    "stiff": {"solref_s": 0.004, "solref_damping_ratio": 0.4, "friction": 0.5}
+  },
+  "free_flight": {
+    "duration_s": 2.5,
+    "step_start_s": 0.5,
+    "step_end_s": 0.75,
+    "step_rate_rad_s": 1.0,
+    "tail_s": 0.3,
+    "max_settled_rate_error_rad_s": 0.15,
+    "max_peak_body_rate_rad_s": 10.0,
+    "max_hover_position_error_m": 0.2,
+    "max_hover_speed_m_s": 0.3,
+    "max_hover_tilt_deg": 10.0,
+    "abort_body_rate_rad_s": 50.0
+  },
+  "status": "Engineering sensitivity, not measurements. Ver2 150 g and assumed bottom ball; six original cells, 100 paired trials/cell. Gains, nominal mixer, inertia, maximum and hover-throttle mapping remain fixed. T/W scales hidden physical actuator effectiveness; PX4 unit output remains fixed by logged hover throttle, so reachable T/W is reported separately. Single factors precede yaw x inertia combinations."
+}
