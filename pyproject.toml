@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rm27-sim"
+version = "0.1.0"
+description = "RM27 shared native simulation, scenes, sensing and replay"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy>=2", "scipy>=1.13", "mujoco>=3.12", "Pillow>=10"]
+
+[tool.setuptools]
+py-modules = ["fly", "m3_sensors", "m3_estimator", "ipc_protocol"]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["rm27_sim*"]

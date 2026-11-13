@@ -1,0 +1,24 @@
+{
+  "field_config": "configs/field.json",
+  "visual_geoms": [
+    "visual_005", "visual_008", "visual_009", "visual_010", "visual_011",
+    "visual_012", "visual_013", "visual_014", "visual_015", "visual_016",
+    "visual_017", "visual_018", "visual_019", "visual_020", "visual_021",
+    "visual_022", "visual_023", "visual_024", "visual_025",
+    "visual_107", "visual_108", "visual_109", "visual_110", "visual_115",
+    "visual_117", "visual_118", "visual_119", "visual_120"
+  ],
+  "whole_bodies": ["rmuc2027_dock_positive_xy", "rmuc2027_dock_negative_xy", "blue_rail_carriage", "blue_rail_support"],
+  "spatial_bodies": ["rmuc2027_collision_surfaces", "rmuc2027_side_closures", "rmuc2027_surface_repairs"],
+  "regions": [
+    [[10.65, -1.1, -0.1], [12.45, 1.1, 1.5]],
+    [[-2.1, -2.25, -0.1], [2.1, 2.25, 3.6]]
+  ],
+  "floor_z_m": -0.31,
+  "aircraft": {
+    "config": "configs/drone_v2.json",
+    "dock_body": "rmuc2027_dock_negative_xy",
+    "team": "red",
+    "start_height_above_slot_m": 2.0
+  }
+}

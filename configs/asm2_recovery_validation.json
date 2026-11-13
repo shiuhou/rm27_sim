@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "development_seed": 20261112051,
+  "validation_seed": 20261112052,
+  "first_contact_deadline_s": 0.22,
+  "event_deadline_after_contact_s": 0.08,
+  "episode_wall_limit_s": 110.0,
+  "max_workers": 8,
+  "imu_config": "configs/impact_recovery/imu_bmi088_px4.json",
+  "sensors": {
+    "mass_kg": 0.142,
+    "detector_threshold_g": 1.0,
+    "detector_persistence": 1,
+    "event_latency_s": 0.0025,
+    "attitude_initial_noise_deg": 0.35,
+    "gyro_bias_std_rad_s": 0.004,
+    "gyro_max_age_s": 0.010,
+    "translation_period_s": 0.02,
+    "translation_latency_s": 0.015,
+    "translation_max_age_s": 0.05,
+    "position_noise_m": 0.002,
+    "velocity_noise_m_s": 0.012
+  },
+  "validation_design": {
+    "count": 12,
+    "gap_m": [0.0025, 0.006],
+    "inward_speed_m_s": [0.07, 0.22],
+    "tangential_speed_m_s": [-0.075, 0.075],
+    "tilt_offset_deg": [-3.0, 3.0],
+    "roll_offset_deg": [-2.0, 2.0],
+    "omega_body_rad_s": [-0.35, 0.35],
+    "hover_fraction": [0.88, 1.02],
+    "lateral_offset_m": [-0.03, 0.03]
+  },
+  "modes": {
+    "oracle_0ms": {"event": "oracle", "state": "oracle", "event_latency_s": 0.0},
+    "oracle_5ms": {"event": "oracle", "state": "oracle", "event_latency_s": 0.005},
+    "oracle_10ms": {"event": "oracle", "state": "oracle", "event_latency_s": 0.010},
+    "oracle_20ms": {"event": "oracle", "state": "oracle", "event_latency_s": 0.020},
+    "aided_oracle_event": {"event": "oracle", "state": "aided", "event_latency_s": 0.005},
+    "aided_imu": {"event": "imu", "state": "aided"},
+    "imu_only": {"event": "imu", "state": "imu_only"}
+  },
+  "development_modes": {
+    "attitude_dropout": {
+      "event": "oracle",
+      "state": "aided",
+      "event_latency_s": 0.005,
+      "gyro_outage_s": [0.10, 0.24]
+    },
+    "translation_dropout": {
+      "event": "oracle",
+      "state": "aided",
+      "event_latency_s": 0.005,
+      "translation_outage_s": [0.09, 0.24]
+    }
+  }
+}

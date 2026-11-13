@@ -1,39 +1,104 @@
 {
-  "field_path": "rm27/simulation/field/rmuc2026_battlefield_mjcf/model.xml",
-  "field_sha256": "b363ffd0c37dea3e6a78ee4881789d8a25896b67a301d5a8614d38a060b02811",
+  "field_path": "components/rm_mjcf/rmuc2027_moving_base_mjcf/model.xml",
+  "field_sha256": "6d8608c21ecdc3839072e3cdb69e0c95460f2be90ed52f2903e7033d25a74896",
   "friendly_team": "red",
   "target_team": "blue",
-  "selection": "negative-X blue base, mirrored from the previously inspected positive-X red-base candidate",
-  "surface_evidence": "User confirmed the positive-X target was the friendly red base. The negative-X pose is its 180-degree field-symmetry counterpart about (-0.02,0.02); final official RM2027 geometry remains pending.",
+  "selection": "positive-X blue base of the RMUC2027 V1 field (blue-coloured base parts visual_118; the red base is at negative X). Armor = the plate directly below the green guidance lamp, facing the field centre; confirmed by the user 2026-10-21.",
+  "surface_evidence": "Measured from mesh visual_117 (light-grey plate set, three plates at 120 deg): the field-facing plate's vertices give a 2.5 mm thick plate whose outward (top) surface centre is (11.4561, 0.0003, 1.0790) m with outward normal (-0.4617, 0, 0.887), i.e. 27.5 deg from vertical, and in-plane extents 0.129 m across (world Y) by 0.114 m along the slope. Mesh face winding points inward, so the outward sign is taken toward +Z. Green lamp visual_116: centre (11.4944, 0, 1.2424), 57 x 55 mm, dome mean normal (-0.968, 0, 0.25). A dark frame (visual_115) surrounds the plate edges.",
   "armor_surface_center_m": [
-    -11.468,
-    0.02,
-    1.0758
+    11.4561,
+    0.0,
+    1.079
   ],
   "armor_normal": [
-    0.4617,
-    0,
+    -0.4617,
+    0.0,
     0.887
   ],
   "armor_dimensions_m": [
-    0.09,
-    0.055,
-    0.006
+    0.129,
+    0.114,
+    0.0025
   ],
   "marker_center_m": [
-    -11.515,
-    0.02,
-    1.17
+    11.4944,
+    0.0,
+    1.2424
   ],
   "marker_normal": [
-    1,
-    0,
-    0
+    -0.968,
+    0.0,
+    0.25
   ],
-  "marker_radius_m": 0.0275,
+  "marker_radius_m": 0.0285,
   "marker_wavelength_nm": 520,
   "marker_luminous_intensity_cd_approx": 10,
-  "marker_source": "RMUC 2026 rulebook V2.2.0 dart guidance lamp specification",
+  "marker_source": "RMUC2027 V1 field mesh visual_116 (green lamp geometry); rulebook optical specification still from RMUC 2026 V2.2.0",
   "marker_illumination_state_modelled": false,
-  "provenance": "Team assignment follows the user's 2026-09-12 correction. Armor footprint is a bounded test patch, not full measured armor dimensions. Marker diameter and optical specifications come from the RMUC 2026 rulebook; its mirrored world pose remains provisional. No real-hardware camera calibration."
+  "provenance": "Measured RMUC2027 V1 target geometry, retained in the repaired moving-base field. Lower plate contact surfaces are corrected and the green lens has a closed collider. Engineering geometry, not a real-field survey; original RMUC2026 estimate remains in base_target_rmuc2026.json.",
+  "field_repository_commit": "rm_mjcf d9439a97cee80baba9d13a1de9882f2d8095fca5",
+  "armor_dimensions_note": "[across (horizontal, world Y), along slope, measured thickness]; collision proxies may use a thicker box behind the surface.",
+  "field_config": "configs/field.json",
+  "marker_motion": {
+    "body": "blue_rail_carriage",
+    "joint": "blue_base_slide",
+    "actuator": "blue_base_drive",
+    "default_position_m": 0.0,
+    "world_axis": [
+      0,
+      -1,
+      0
+    ],
+    "note": "marker_center_m is at q=0; the lower armor center stays fixed when the lamp moves."
+  },
+  "across_axis": [
+    0.0,
+    1.0,
+    0.0
+  ],
+  "slope_axis": [
+    -0.8870284341521923,
+    0.0,
+    -0.46171480050514907
+  ],
+  "contact_region_halfsize_slope_across_m": [
+    0.045,
+    0.05
+  ],
+  "contact_region_basis": "Central 90 x 100 mm ray audit footprint already used in test_repaired_arena.py; excludes the surrounding frame. Not a new official scoring area.",
+  "registered_contact_geoms": [
+    "rmuc2027_surface_35363",
+    "rmuc2027_surface_35364",
+    "rmuc2027_surface_35365",
+    "rmuc2027_surface_35366",
+    "rmuc2027_surface_35367",
+    "rmuc2027_surface_35368",
+    "rmuc2027_surface_35369",
+    "rmuc2027_surface_35370",
+    "rmuc2027_surface_35371",
+    "rmuc2027_surface_35372",
+    "rmuc2027_surface_35373",
+    "rmuc2027_surface_35374",
+    "rmuc2027_surface_35375",
+    "rmuc2027_surface_35376",
+    "rmuc2027_surface_35377",
+    "rmuc2027_surface_35378",
+    "rmuc2027_surface_35379",
+    "rmuc2027_surface_39516",
+    "rmuc2027_surface_39517",
+    "rmuc2027_surface_39518",
+    "rmuc2027_surface_39519",
+    "rmuc2027_surface_39520",
+    "rmuc2027_surface_39521",
+    "rmuc2027_surface_39522",
+    "rmuc2027_surface_39523",
+    "rmuc2027_surface_39524",
+    "rmuc2027_surface_39525",
+    "rmuc2027_surface_39526",
+    "rmuc2027_surface_39527",
+    "rmuc2027_surface_39528",
+    "rmuc2027_surface_39529",
+    "rmuc2027_surface_39530",
+    "rmuc2027_surface_39531"
+  ]
 }

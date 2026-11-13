@@ -1,0 +1,3 @@
+# Optional browser viewer; geometry stays in the external rm_mjcf checkout.
+-r requirements-base-rail.txt
+rmuc2027-mjarena[viewer] @ git+https://github.com/CosmosMount/rmuc2027_mjarena.git@ffd1eb7d1d1a2d1654125d8f316fdb0fdac6d001

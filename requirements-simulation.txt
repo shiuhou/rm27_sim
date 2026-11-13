@@ -3,6 +3,7 @@
 scipy>=1.13
 cadquery-ocp==8.0.1.0.0
 trimesh>=4.0
+rtree>=1.2,<2
 Pillow>=10
 pymavlink==2.4.49
 matplotlib>=3.9
