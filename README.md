@@ -1,3 +1,13 @@
+## Non-RL source dependency
+
+Shared ASM2 physics, sensors and scoring are provided here. The canonical M3
+estimator and contact/recovery algorithms live in the sibling `rm27_non_rl`
+component of `shiuhou/rm27_drones`. Install both editable packages and
+`packages/physics`; compatibility experiment and M3 imports delegate there.
+Native simulator/sensor APIs remain independent of Non-RL. Recorded results,
+local plans, execution helpers and externally registered aircraft/field assets
+are not included in this source commit. See the Non-RL component README.
+
 # RM27 Sim — 獨立仿真工作區
 
 

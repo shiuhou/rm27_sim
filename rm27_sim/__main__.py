@@ -205,9 +205,9 @@ def main():
     else:
         import mujoco.viewer
 
-        mujoco.viewer.launch(
-            model=mujoco.MjModel.from_xml_path(str(args.scene.resolve()))
-        )
+        scene = args.scene
+        loader = mujoco.MjModel.from_binary_path if scene.suffix.lower() == '.mjb' else mujoco.MjModel.from_xml_path
+        mujoco.viewer.launch(model=loader(str(scene.resolve())))
 
 
 if __name__ == "__main__":

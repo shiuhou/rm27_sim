@@ -1,0 +1,7 @@
+{
+  "path": "components/rm_mjcf/rmuc2027_moving_base_mjcf/model.xml",
+  "source_commit": "d9439a97cee80baba9d13a1de9882f2d8095fca5",
+  "manifest_sha256": "5664e1391c1ba7436769b8bc252ea491b5af5ae765fd9dd89744938f4431aef6",
+  "target_default": "hold_center",
+  "description": "Current development arena; historical replay and frozen configurations retain their original maps."
+}

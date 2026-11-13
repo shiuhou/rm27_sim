@@ -178,6 +178,48 @@ class EstimatorBasicsTest(unittest.TestCase):
 
 
 class EstimatorHealthTest(unittest.TestCase):
+    def test_out_of_order_imu_does_not_reintegrate_time(self) -> None:
+        reference = LocalizationEstimator(EstimatorConfig())
+        estimator = LocalizationEstimator(EstimatorConfig())
+        for current in (reference, estimator):
+            current.predict(imu_sample(0.0))
+            current.predict(imu_sample(0.01, specific_force=(1.0, 0.0, GRAVITY)))
+        for timestamp in (0.01, 0.005, math.nan):
+            estimator.predict(imu_sample(timestamp))
+        for current in (reference, estimator):
+            current.predict(imu_sample(0.02, specific_force=(1.0, 0.0, GRAVITY)))
+
+        expected = reference.state(0.02)
+        actual = estimator.state(0.02)
+        np.testing.assert_array_equal(actual.position, expected.position)
+        np.testing.assert_array_equal(actual.velocity, expected.velocity)
+
+    def test_auxiliary_duplicates_and_regressions_are_ignored(self) -> None:
+        estimator = LocalizationEstimator(EstimatorConfig())
+        estimator.correct_flow(flow_sample(0.02, (1.0, 0.0)))
+        estimator.correct_tof(tof_sample(0.02, 1.0))
+        before = estimator.state(0.03)
+        for timestamp in (0.02, 0.01, math.nan):
+            estimator.correct_flow(flow_sample(timestamp, (2.0, 1.0)))
+            estimator.correct_tof(tof_sample(timestamp, 2.0))
+
+        after = estimator.state(0.03)
+        np.testing.assert_array_equal(after.position, before.position)
+        np.testing.assert_array_equal(after.velocity, before.velocity)
+        self.assertEqual(after.flow_age, before.flow_age)
+        self.assertEqual(after.tof_age, before.tof_age)
+
+    def test_future_samples_and_nonfinite_query_are_unhealthy(self) -> None:
+        estimator = LocalizationEstimator(EstimatorConfig())
+        estimator.predict(imu_sample(0.02))
+        estimator.correct_flow(flow_sample(0.02))
+        estimator.correct_tof(tof_sample(0.02))
+
+        self.assertTrue(estimator.state(0.02).healthy)
+        for timestamp in (0.01, math.nan, math.inf, -math.inf):
+            with self.subTest(timestamp=timestamp):
+                self.assertFalse(estimator.state(timestamp).healthy)
+
     def test_short_flow_dropout_stays_healthy(self) -> None:
         est = LocalizationEstimator(EstimatorConfig())
         run_sequence(est, 1.0)

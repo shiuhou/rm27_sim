@@ -41,7 +41,7 @@ class LiveView:
             self.handle.cam.azimuth = 120
             self.handle.cam.elevation = -22
             self.handle.cam.distance = 18 if self.overview else 1.3
-            self.handle.cam.lookat[:] = data.qpos[:3]
+            self.handle.cam.lookat[:] = data.xpos[self.body]
             self.handle.opt.geomgroup[3] = 0
             self._set_camera()
 
@@ -56,7 +56,7 @@ class LiveView:
             self.handle.opt.sitegroup[:]=0
         else:
             self.handle.cam.type=mujoco.mjtCamera.mjCAMERA_FREE
-            self.handle.cam.lookat[:]=[-5.4,.5,1.5] if self.overview else self.data.qpos[:3]
+            self.handle.cam.lookat[:]=[-5.4,.5,1.5] if self.overview else self.data.xpos[self.body]
 
     def key(self, key):
         if key == 32:  # space
@@ -107,17 +107,34 @@ class LiveView:
             thread.join(timeout=5)
 
 
+def recorded_states(source, model, data):
+    """Load one recording, with a legacy pose layout or complete integration state."""
+    with np.load(Path(source)/'trajectory.npz', allow_pickle=False) as archive:
+        complete = 'integration' in archive
+        rows = archive['integration' if complete else 'trace']
+        phases = archive['phases'] if 'phases' in archive else np.repeat('RECORDED', len(rows))
+    if complete:
+        kind = mujoco.mjtState.mjSTATE_INTEGRATION
+        if (rows.ndim != 2 or rows.shape[1] != mujoco.mj_stateSize(model, kind) or not len(rows)
+                or len(phases) != len(rows) or not np.isfinite(rows).all() or np.any(np.diff(rows[:, 0]) <= 0)):
+            raise ValueError('Invalid recorded integration state')
+
+        def restore(row):
+            mujoco.mj_setState(model, data, row, kind)
+            mujoco.mj_forward(model, data)
+    else:
+        def restore(row):
+            data.time = row[0]
+            data.qpos[:], data.qvel[:], data.act[:], data.ctrl[:] = row[1:8], row[8:14], row[14:18], row[18:22]
+            mujoco.mj_forward(model, data)
+    return rows, phases, restore
+
+
 def view_episode(source, speed=.5, loop=False, camera='follow', fovy=None, camera_config=DEFAULT_MOUNT):
     source = Path(source)
-    archive = np.load(source/"trajectory.npz")
-    trace = archive["trace"]
-    phases = archive["phases"] if "phases" in archive else np.array(["RECORDED"]*len(trace))
     model = load_model(source)
     data = mujoco.MjData(model)
-    def restore(row):
-        data.time = row[0]
-        data.qpos[:], data.qvel[:], data.act[:], data.ctrl[:] = row[1:8], row[8:14], row[14:18], row[18:22]
-        mujoco.mj_forward(model, data)
+    trace, phases, restore = recorded_states(source, model, data)
     restore(trace[0])
     view = LiveView(model, data, speed, camera, fovy, camera_config)
     view.label = "Recorded-state playback (not a new flight)"
@@ -144,19 +161,18 @@ def render_episode(source, output, whole=False):
     output.mkdir(parents=True, exist_ok=False)
     model = load_model(source)
     data = mujoco.MjData(model)
-    trace = np.load(source/"trajectory.npz")["trace"]
+    trace, _, restore = recorded_states(source, model, data)
+    body = model.body('uav').id
     summary = json.loads((source/"summary.json").read_text())
     contact = summary.get("terminal", summary).get("first_contact")
-    renderer = mujoco.Renderer(model, height=480, width=800)
+    renderer = mujoco.Renderer(model, height=480, width=800, max_geom=max(10000, model.ngeom+model.nsite+500))
     cam = mujoco.MjvCamera()
     opt = mujoco.MjvOption()
     opt.geomgroup[3] = 0
     def frame_at(t, overview=False):
         row = trace[np.argmin(abs(trace[:, 0]-t))]
-        data.time = row[0]
-        data.qpos[:], data.qvel[:], data.act[:], data.ctrl[:] = row[1:8], row[8:14], row[14:18], row[18:22]
-        mujoco.mj_forward(model, data)
-        cam.lookat[:] = [-5.4, .5, 1.5] if overview else data.qpos[:3]
+        restore(row)
+        cam.lookat[:] = [-5.4, .5, 1.5] if overview else data.xpos[body]
         cam.distance, cam.azimuth, cam.elevation = (18, 90, -45) if overview else (1.15, 115, -22)
         renderer.update_scene(data, camera=cam, scene_option=opt)
         image = Image.fromarray(renderer.render())

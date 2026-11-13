@@ -184,35 +184,45 @@ class QuadrotorController:
         self,
         model: mujoco.MjModel,
         parameters: ControllerParameters | None = None,
+        *,
+        body_name: str = "quadrotor",
+        joint_name: str = "root",
+        actuator_names: tuple[str, ...] = ROTOR_NAMES,
+        control_dt_s: float | None = None,
     ) -> None:
         self.model = model
         self.parameters = parameters or ControllerParameters()
+        self.control_dt_s = float(model.opt.timestep if control_dt_s is None else control_dt_s)
+        if not math.isfinite(self.control_dt_s) or self.control_dt_s <= 0:
+            raise ValueError("control_dt_s must be finite and positive")
         self.body_id = mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_BODY, "quadrotor"
+            model, mujoco.mjtObj.mjOBJ_BODY, body_name
         )
         self.root_joint_id = mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_JOINT, "root"
+            model, mujoco.mjtObj.mjOBJ_JOINT, joint_name
         )
         if self.body_id < 0 or self.root_joint_id < 0:
-            raise ValueError("model must contain body 'quadrotor' and free joint 'root'")
+            raise ValueError(f"model must contain body {body_name!r} and free joint {joint_name!r}")
+        if (model.jnt_type[self.root_joint_id] != mujoco.mjtJoint.mjJNT_FREE
+                or model.jnt_bodyid[self.root_joint_id] != self.body_id):
+            raise ValueError("controller joint must be the selected body's free joint")
         self.qpos_address = int(model.jnt_qposadr[self.root_joint_id])
         self.mass = float(model.body_mass[self.body_id])
         # 垂直誤差積分器（單位：m·s），只服務 altitude channel。
         self._vertical_error_integral = 0.0
 
-        actuator_names = tuple(
-            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_ACTUATOR, actuator_id)
-            for actuator_id in range(model.nu)
-        )
-        if model.nu != 4 or actuator_names != ROTOR_NAMES:
-            raise ValueError(
-                f"expected four actuators ordered {ROTOR_NAMES}, got {actuator_names}"
-            )
-
-        self.minimum_thrusts = model.actuator_ctrlrange[:, 0].astype(float).copy()
-        self.maximum_thrusts = model.actuator_ctrlrange[:, 1].astype(float).copy()
-        if not np.all(model.actuator_ctrllimited):
-            raise ValueError("all rotor actuators must have control limits")
+        if len(actuator_names) != 4 or len(set(actuator_names)) != 4:
+            raise ValueError('Expected four distinct named rotor actuators')
+        self.actuator_ids = np.array([
+            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
+            for name in actuator_names
+        ])
+        if np.any(self.actuator_ids < 0):
+            raise ValueError(f'Missing rotor actuators: {actuator_names}')
+        self.minimum_thrusts = model.actuator_ctrlrange[self.actuator_ids, 0].astype(float).copy()
+        self.maximum_thrusts = model.actuator_ctrlrange[self.actuator_ids, 1].astype(float).copy()
+        if not np.all(model.actuator_ctrllimited[self.actuator_ids]):
+            raise ValueError('All rotor actuators must have control limits')
         if not np.allclose(self.minimum_thrusts, 0.0):
             raise ValueError("rotor minimum thrust must be zero")
 
@@ -232,18 +242,20 @@ class QuadrotorController:
         # 每一欄代表一顆旋翼的貢獻。由 τ=r×F 可得
         # τx=y·Fz、τy=-x·Fz；τz 則讀取 XML gear 的反作用力矩係數。
         allocation = np.zeros((4, 4), dtype=float)
-        for actuator_id, rotor_name in enumerate(ROTOR_NAMES):
-            site_name = f"{rotor_name}_site"
-            site_id = mujoco.mj_name2id(
-                self.model, mujoco.mjtObj.mjOBJ_SITE, site_name
-            )
-            if site_id < 0:
-                raise ValueError(f"missing rotor site: {site_name}")
+        for column, actuator_id in enumerate(self.actuator_ids):
+            rotor_name = self.model.actuator(actuator_id).name
+            if self.model.actuator_trntype[actuator_id] != mujoco.mjtTrn.mjTRN_SITE:
+                raise ValueError(f"{rotor_name} must use a rotor site transmission")
+            site_id = int(self.model.actuator_trnid[actuator_id, 0])
+            if self.model.site_bodyid[site_id] != self.body_id:
+                raise ValueError(f"{rotor_name} site must belong to the controlled body")
+            if not np.allclose(self.model.site_quat[site_id], [1, 0, 0, 0]):
+                raise ValueError(f"{rotor_name} site axes must match the body axes")
             x_position, y_position = self.model.site_pos[site_id, :2]
             gear = self.model.actuator_gear[actuator_id]
             if not np.allclose(gear[:2], 0.0) or not math.isclose(gear[2], 1.0):
                 raise ValueError(f"{rotor_name} must apply unit local +Z force")
-            allocation[:, actuator_id] = (
+            allocation[:, column] = (
                 1.0,
                 y_position,
                 -x_position,
@@ -309,14 +321,14 @@ class QuadrotorController:
             parameters.position_kp * position_error
             + parameters.position_kd * velocity_error
         )
-        # 垂直積分項：以 model timestep 積分高度誤差，ki 與積分上限都很小，
+        # 垂直積分項：以控制更新週期積分高度誤差（缺省為 model timestep），
         # 穩態時補償恆定力偏差，transient 時幾乎不影響原本的 PD 行為。
         integral_limit = (
             parameters.max_vertical_integral_accel / parameters.position_ki_z
         )
         self._vertical_error_integral = float(
             np.clip(
-                self._vertical_error_integral + position_error[2] * self.model.opt.timestep,
+                self._vertical_error_integral + position_error[2] * self.control_dt_s,
                 -integral_limit,
                 integral_limit,
             )
@@ -471,7 +483,7 @@ def step_controller(
     # 一個 timestep 的固定順序：讀狀態/算控制 → 寫 actuator → 安全檢查 → 積分。
     # measured_state 只影響控制器看到的狀態；安全檢查永遠用 ground truth。
     output = controller.update(data, target, measured_state=measured_state)
-    data.ctrl[:] = output.motor_thrusts
+    data.ctrl[controller.actuator_ids] = output.motor_thrusts
     check_runtime_safety(
         controller.read_state(data), output.motor_thrusts, controller, data.time
     )
